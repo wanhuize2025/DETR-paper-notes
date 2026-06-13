@@ -1,3 +1,5 @@
+以下是修改后的公式，已转换为 `$...$` 格式：
+
 # 一文搞懂 DETR 中的特征图提取与位置编码细节
 
 自从 Transformer 横扫 NLP 之后，视觉领域的 **DETR**（Detection Transformer）也成了目标检测的热门话题。很多熟悉 CNN 和 YOLO、Faster R-CNN 的朋友，第一次看到 DETR 时都会困惑：**特征图怎么喂给 Transformer？位置编码又从哪来？** 今天我们就结合 DETR 源码，把这两个核心问题讲透。
@@ -116,7 +118,7 @@ class BackboneBase(nn.Module):
 
 有人可能会想：为什么不直接把原始图像像素送进 Transformer？原因有三：
 
-1. **计算量爆炸**：一张 800×1066 的图像就有 85 万个像素点，Self-Attention 复杂度 O(n²)，完全不可行。
+1. **计算量爆炸**：一张 800×1066 的图像就有 85 万个像素点，Self-Attention 复杂度 $O(n^2)$，完全不可行。
 2. **语义信息不足**：像素级信息太底层，缺少物体级别的上下文。
 3. **DETR 论文实验证明**：移除 backbone 性能会断崖式下跌。
 
@@ -158,7 +160,7 @@ class Joiner(nn.Sequential):
         return out, pos
 ```
 
-特征图会拉直成一个序列，形状从 `(C, H, W)` 变为 `(H×W, C)`，再送入 Transformer。
+特征图会拉直成一个序列，形状从 `(C, H, W)` 变为 `(H \times W, C)`，再送入 Transformer。
 
 ### 2.6 动手跑一跑 Backbone：从输入到输出的真实变换
 
@@ -178,9 +180,9 @@ autodrv-BackboneBase: output: 0, shape: torch.Size([2, 2048, 25, 42]), mask shap
 
 **解读**：
 - 输入：2 张 800×1332 的 RGB 图像
-- 输出：2×2048×25×42 的特征图
-- 空间下采样倍数：800÷25=32，1332÷42≈31.7
-- **步长=32**：每个特征点对应原图 32×32 的区域
+- 输出：$2 \times 2048 \times 25 \times 42$ 的特征图
+- 空间下采样倍数：$800 \div 25 = 32$，$1332 \div 42 \approx 31.7$
+- **步长=32**：每个特征点对应原图 $32 \times 32$ 的区域
 
 #### 🔸 当 `dilation=True`（启用空洞卷积，步长=16）
 
@@ -191,11 +193,11 @@ autodrv-BackboneBase: output: 0, shape: torch.Size([2, 2048, 50, 84]), mask shap
 ```
 
 **解读**：
-- 输出：2×2048×50×84 的特征图
-- 空间下采样倍数：800÷50=16，1332÷84≈15.8
-- **步长=16**：特征图分辨率翻倍，每个特征点对应原图 16×16 的区域
+- 输出：$2 \times 2048 \times 50 \times 84$ 的特征图
+- 空间下采样倍数：$800 \div 50 = 16$，$1332 \div 84 \approx 15.8$
+- **步长=16**：特征图分辨率翻倍，每个特征点对应原图 $16 \times 16$ 的区域
 
-> ✅ **结论**：`dilation=True` 使特征图分辨率从 25×42 提升到 50×84，**像素点数量增加 4 倍**，尤其有利于小物体检测。同时，mask 也会被同步插值到特征图尺寸，保证有效区域标记正确。
+> ✅ **结论**：`dilation=True` 使特征图分辨率从 $25 \times 42$ 提升到 $50 \times 84$，**像素点数量增加 4 倍**，尤其有利于小物体检测。同时，mask 也会被同步插值到特征图尺寸，保证有效区域标记正确。
 
 ---
 
@@ -226,29 +228,29 @@ def build_position_encoding(args):
 
 **核心公式**（和 Transformer 原文一致）：
 
-对于特征图上的一个点 `(x, y)`，其位置编码的第 `i` 维定义为：
+对于特征图上的一个点 $(x, y)$，其位置编码的第 $i$ 维定义为：
 
 **对 y 坐标编码：**
 
-\[
+$$
 \begin{aligned}
 PE_{(y, 2i)} &= \sin\left(\frac{y}{10000^{2i / d}}\right) \\
 PE_{(y, 2i+1)} &= \cos\left(\frac{y}{10000^{2i / d}}\right)
 \end{aligned}
-\]
+$$
 
 **对 x 坐标编码：**
 
-\[
+$$
 \begin{aligned}
 PE_{(x, 2i)} &= \sin\left(\frac{x}{10000^{2i / d}}\right) \\
 PE_{(x, 2i+1)} &= \cos\left(\frac{x}{10000^{2i / d}}\right)
 \end{aligned}
-\]
+$$
 
-其中 `d = N_steps = hidden_dim // 2`，`i` 从 0 到 `d-1`。
+其中 $d = N\_steps = hidden\_dim // 2$，$i$ 从 0 到 $d-1$。
 
-最终位置编码 = `[PE_y, PE_x]`，总维度 `2d = hidden_dim`。
+最终位置编码 = $[PE_y, PE_x]$，总维度 $2d = hidden\_dim$。
 
 **代码中的归一化细节**：
 
@@ -273,13 +275,13 @@ def forward(self, x):
 
 ### 3.3 可学习位置编码（备选）
 
-如果选择 `learned` 版本，则直接初始化一个可训练的参数矩阵，形状为 `(H, W, C)`，随网络一起优化。但 DETR 论文实验表明正弦编码效果略好且无需额外参数。
+如果选择 `learned` 版本，则直接初始化一个可训练的参数矩阵，形状为 $(H, W, C)$，随网络一起优化。但 DETR 论文实验表明正弦编码效果略好且无需额外参数。
 
 ### 3.4 动手跑一跑位置编码：从坐标网格到正弦编码
 
 > 位置编码是如何从一张"空白坐标图"变成 256 维的"位置指纹"？我们打印每一步的形状变化。
 
-输入是 Backbone 输出的特征图（以 `dilation=False` 为例，尺寸 2×2048×25×42）：
+输入是 Backbone 输出的特征图（以 `dilation=False` 为例，尺寸 $2 \times 2048 \times 25 \times 42$）：
 
 ```
 autodrv-PositionEmbeddingSine: input tensor_list.tensors shape: torch.Size([2, 2048, 25, 42]), mask shape: torch.Size([2, 25, 42])
@@ -303,7 +305,7 @@ autodrv-PositionEmbeddingSine: pos_x after sin/cos: torch.Size([2, 25, 42, 128])
 autodrv-PositionEmbeddingSine: final pos shape: torch.Size([2, 256, 25, 42])
 ```
 
-**最终结果**：位置编码的形状为 `(batch=2, channels=256, H=25, W=42)`，与降维后的特征图完全匹配，注意这里做了一次通道permute，将(B,H,W,C)改成了PyTorch CNN 特征图常用格式： (B,C,H,W)。
+**最终结果**：位置编码的形状为 $(batch=2, channels=256, H=25, W=42)$，与降维后的特征图完全匹配，注意这里做了一次通道permute，将(B,H,W,C)改成了PyTorch CNN 特征图常用格式： (B,C,H,W)。
 
 > 📌 **关键点**：前 128 维编码的是 **y 坐标**（垂直方向），后 128 维编码的是 **x 坐标**（水平方向）。
 
@@ -313,13 +315,13 @@ autodrv-PositionEmbeddingSine: final pos shape: torch.Size([2, 256, 25, 42])
 
 | 组件 | 来源 | 作用 | 形状 |
 |------|------|------|------|
-| **特征图** | ResNet backbone 最后一个 stage | 提供 **语义内容**：这是什么东西？ | `(2048, H/32, W/32)` 或 `(2048, H/16, W/16)`（dilation=True） |
-| **位置编码** | 正弦函数动态生成 | 提供 **空间位置**：这个东西在图像哪里？ | `(256, H/32, W/32)` 或 `(256, H/16, W/16)` |
+| **特征图** | ResNet backbone 最后一个 stage | 提供 **语义内容**：这是什么东西？ | $(2048, H/32, W/32)$ 或 $(2048, H/16, W/16)$（dilation=True） |
+| **位置编码** | 正弦函数动态生成 | 提供 **空间位置**：这个东西在图像哪里？ | $(256, H/32, W/32)$ 或 $(256, H/16, W/16)$ |
 
 **合并方式**：
 1. 特征图先通过一个 `nn.Conv2d(2048, 256, 1)` 降维到与位置编码相同的通道数 256
-2. 然后逐元素相加：`encoder_input = feature_map_proj + position_encoding`
-3. 拉平成序列 `(H×W, batch, 256)` 送入 Transformer
+2. 然后逐元素相加：$encoder\_input = feature\_map\_proj + position\_encoding$
+3. 拉平成序列 $(H \times W, batch, 256)$ 送入 Transformer
 
 > 💡 **直观比喻**：特征图是 **电影的画面内容**（人物、背景），位置编码是 **每个像素的经纬度**。没有位置编码，Transformer 会以为所有像素都堆在同一个"混沌点"上。
 

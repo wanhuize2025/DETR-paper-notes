@@ -1,3 +1,5 @@
+以下是修改后的内容，参考文献已按标准格式换行：
+
 # 基于Transformer的端到端目标检测
 
 作者：Nicolas Carion\*, Francisco Massa\*, Gabriel Synnaeve, Nicolas Usunier, Alexander Kirillov, Sergey Zagoruyko
@@ -11,7 +13,7 @@
 目标检测的目标是为每个感兴趣的目标预测一组边界框和类别标签。现代检测器通过在一大组提议框[37,5]、锚点[23]或窗口中心[53,46]上定义替代的回归和分类问题，以间接的方式处理这个集合预测任务。它们的性能受到以下因素的显著影响：用于合并近似重复预测的后处理步骤、锚点集的设计以及将目标框分配给锚点的启发式规则[52]。为了简化这些流程，我们提出了一种直接的集合预测方法来绕过替代任务。这种端到端的理念已经在机器翻译或语音识别等复杂结构化预测任务中带来了显著进展，但在目标检测中尚未实现：先前的尝试[43,16,4,39]要么添加了其他形式的先验知识，要么未能在具有挑战性的基准测试中证明与强基线具有竞争力。本文旨在弥合这一差距。
 
 ![](../figures/Fig1.png)
-**图1：DETR通过结合通用CNN和Transformer架构，直接（并行地）预测最终的检测集合。在训练期间，二分匹配将预测唯一地分配给真实标注框。没有匹配的预测应产生“无目标”（\(\varnothing\)）类别预测。**
+**图1：DETR通过结合通用CNN和Transformer架构，直接（并行地）预测最终的检测集合。在训练期间，二分匹配将预测唯一地分配给真实标注框。没有匹配的预测应产生“无目标”（$\varnothing$）类别预测。**
 
 我们将目标检测视为一个直接的集合预测问题，从而简化了训练流程。我们采用了基于Transformer的编码器-解码器架构[47]，这是一种流行的序列预测架构。Transformer的自注意力机制显式地建模了序列中所有元素对之间的相互作用，这使得该架构特别适合集合预测的特定约束，例如消除重复预测。
 
@@ -55,25 +57,25 @@ Transformer最初用于自回归模型，遵循早期的序列到序列模型[44
 
 ### 3.1 目标检测集合预测损失
 
-DETR通过解码器的一次前向传播，推断出一个固定大小的集合，包含 \(N\) 个预测，其中 \(N\) 被设置为显著大于图像中典型目标的数量。训练的主要困难之一是根据真实标注对预测的目标（类别、位置、大小）进行评分。我们的损失函数首先在预测目标和真实目标之间产生一个最优的二分匹配，然后优化特定于目标的（边界框）损失。
+DETR通过解码器的一次前向传播，推断出一个固定大小的集合，包含 $N$ 个预测，其中 $N$ 被设置为显著大于图像中典型目标的数量。训练的主要困难之一是根据真实标注对预测的目标（类别、位置、大小）进行评分。我们的损失函数首先在预测目标和真实目标之间产生一个最优的二分匹配，然后优化特定于目标的（边界框）损失。
 
-我们用 \(y\) 表示真实目标集合，用 \(\hat{y} = \{\hat{y}_i\}_{i = 1}^N\) 表示 \(N\) 个预测的集合。假设 \(N\) 大于图像中目标的数量，我们也将 \(y\) 视为一个大小为 \(N\) 的集合，并用 \(\varnothing\)（无目标）填充。为了在这两个集合之间找到一个二分匹配，我们搜索一个 \(N\) 个元素的排列 \(\sigma \in \mathfrak{S}_N\)，使得成本最低：
+我们用 $y$ 表示真实目标集合，用 $\hat{y} = \{\hat{y}_i\}_{i = 1}^N$ 表示 $N$ 个预测的集合。假设 $N$ 大于图像中目标的数量，我们也将 $y$ 视为一个大小为 $N$ 的集合，并用 $\varnothing$（无目标）填充。为了在这两个集合之间找到一个二分匹配，我们搜索一个 $N$ 个元素的排列 $\sigma \in \mathfrak{S}_N$，使得成本最低：
 
-\[\hat{\sigma} = \underset {\sigma \in \mathfrak{S}_N}{\arg \min}\sum_i^N\mathcal{L}_{\mathrm{match}}(y_i,\hat{y}_{\sigma (i)}), \quad (1)\]
+$$\hat{\sigma} = \underset {\sigma \in \mathfrak{S}_N}{\arg \min}\sum_i^N\mathcal{L}_{\mathrm{match}}(y_i,\hat{y}_{\sigma (i)}), \quad (1)$$
 
-其中 \(\mathcal{L}_{\mathrm{match}}(y_i,\hat{y}_{\sigma (i)})\) 是真实目标 \(y_{i}\) 与索引为 \(\sigma (i)\) 的预测之间的配对匹配成本。这个最优分配可以使用匈牙利算法高效计算，遵循先前的工作（例如[43]）。
+其中 $\mathcal{L}_{\mathrm{match}}(y_i,\hat{y}_{\sigma (i)})$ 是真实目标 $y_{i}$ 与索引为 $\sigma (i)$ 的预测之间的配对匹配成本。这个最优分配可以使用匈牙利算法高效计算，遵循先前的工作（例如[43]）。
 
-匹配成本同时考虑了类别预测以及预测框与真实框的相似度。真实目标集合中的每个元素 \(i\) 可以看作 \(y_{i} = (c_{i},b_{i})\)，其中 \(c_{i}\) 是目标类别标签（可能是 \(\varnothing\)），\(b_{i}\in [0,1]^{4}\) 是一个向量，定义了真实框的中心坐标以及相对于图像尺寸的高度和宽度。对于索引为 \(\sigma (i)\) 的预测，我们定义其类别 \(c_{i}\) 的概率为 \(\hat{p}_{\sigma (i)}(c_{i})\)，预测的边界框为 \(\hat{b}_{\sigma (i)}\)。根据这些符号，我们将 \(\mathcal{L}_{\mathrm{match}}(y_i,\hat{y}_{\sigma (i)})\) 定义为 \(- \mathbb{1}_{\{c_i\neq \emptyset \}}\hat{p}_{\sigma (i)}(c_i) + \mathbb{1}_{\{c_i\neq \emptyset \}}\mathcal{L}_{\mathrm{box}}(b_i,\hat{b}_{\sigma (i)})\)。
+匹配成本同时考虑了类别预测以及预测框与真实框的相似度。真实目标集合中的每个元素 $i$ 可以看作 $y_{i} = (c_{i},b_{i})$，其中 $c_{i}$ 是目标类别标签（可能是 $\varnothing$），$b_{i}\in [0,1]^{4}$ 是一个向量，定义了真实框的中心坐标以及相对于图像尺寸的高度和宽度。对于索引为 $\sigma (i)$ 的预测，我们定义其类别 $c_{i}$ 的概率为 $\hat{p}_{\sigma (i)}(c_{i})$，预测的边界框为 $\hat{b}_{\sigma (i)}$。根据这些符号，我们将 $\mathcal{L}_{\mathrm{match}}(y_i,\hat{y}_{\sigma (i)})$ 定义为 $- \mathbb{1}_{\{c_i\neq \emptyset \}}\hat{p}_{\sigma (i)}(c_i) + \mathbb{1}_{\{c_i\neq \emptyset \}}\mathcal{L}_{\mathrm{box}}(b_i,\hat{b}_{\sigma (i)})$。
 
 这个寻找匹配的过程，扮演了与现有检测器中使用启发式分配规则将提议框[37]或锚点[22]匹配到真实目标相同的角色。主要区别在于，我们需要为一对一的匹配找到直接的集合预测，以避免重复。
 
 第二步是计算损失函数，即对上一步中匹配的所有对计算匈牙利损失。我们定义的损失类似于常见目标检测器的损失，即类别预测的负对数似然和后面定义的边界框损失的线性组合：
 
-\[\mathcal{L}_{\mathrm{Hungarian}}(y,\hat{y}) = \sum_{i = 1}^{N}\left[-\log \hat{p}_{\hat{\sigma}(i)}(c_i) + \mathbb{1}_{\{c_i\neq \emptyset \}}\mathcal{L}_{\mathrm{box}}(b_i,\hat{b}_{\hat{\sigma}(i)})\right], \quad (2)\]
+$$\mathcal{L}_{\mathrm{Hungarian}}(y,\hat{y}) = \sum_{i = 1}^{N}\left[-\log \hat{p}_{\hat{\sigma}(i)}(c_i) + \mathbb{1}_{\{c_i\neq \emptyset \}}\mathcal{L}_{\mathrm{box}}(b_i,\hat{b}_{\hat{\sigma}(i)})\right], \quad (2)$$
 
-其中 \(\hat{\sigma}\) 是在第一步（1）中计算出的最优分配。在实践中，当 \(c_{i} = \varnothing\) 时，我们将对数概率项的权重降低10倍，以解决类别不平衡问题。这类似于Faster R-CNN训练过程中通过子采样[37]来平衡正/负提议框。请注意，一个目标与 \(\varnothing\) 之间的匹配成本不依赖于预测，这意味着在这种情况下成本是一个常数。在匹配成本中，我们使用概率 \(\hat{p}_{\sigma (i)}(c_i)\) 而不是对数概率。这使得类别预测项与 \(\mathcal{L}_{\mathrm{box}}(\cdot ,\cdot)\)（如下所述）具有可比性，并且我们观察到更好的经验性能。
+其中 $\hat{\sigma}$ 是在第一步（1）中计算出的最优分配。在实践中，当 $c_{i} = \varnothing$ 时，我们将对数概率项的权重降低10倍，以解决类别不平衡问题。这类似于Faster R-CNN训练过程中通过子采样[37]来平衡正/负提议框。请注意，一个目标与 $\varnothing$ 之间的匹配成本不依赖于预测，这意味着在这种情况下成本是一个常数。在匹配成本中，我们使用概率 $\hat{p}_{\sigma (i)}(c_i)$ 而不是对数概率。这使得类别预测项与 $\mathcal{L}_{\mathrm{box}}(\cdot ,\cdot)$（如下所述）具有可比性，并且我们观察到更好的经验性能。
 
-**边界框损失**。匹配成本和匈牙利损失的第二部分是 \(\mathcal{L}_{\mathrm{box}}(\cdot)\)，它对边界框进行评分。与许多检测器相对于某些初始猜测进行 \(\Delta\) 预测不同，我们直接进行边界框预测。虽然这种方法简化了实现，但它带来了损失相对缩放的问题。最常用的 \(\ell_1\) 损失对于小框和大框会有不同的尺度，即使它们的相对误差相似。为了缓解这个问题，我们使用了 \(\ell_1\) 损失和尺度不变的广义IoU损失[38] \(\mathcal{L}_{\mathrm{iou}}(\cdot ,\cdot)\) 的线性组合。总的来说，我们的边界框损失 \(\mathcal{L}_{\mathrm{box}}(b_i,\hat{b}_{\sigma (i)})\) 定义为 \(\lambda_{\mathrm{iou}}\mathcal{L}_{\mathrm{iou}}(b_i,\hat{b}_{\sigma (i)}) + \lambda_{\mathrm{L1}}||b_i - \hat{b}_{\sigma (i)}||_1\)，其中 \(\lambda_{\mathrm{iou}},\lambda_{\mathrm{L1}}\in \mathbb{R}\) 是超参数。这两个损失通过批次内的目标数量进行归一化。
+**边界框损失**。匹配成本和匈牙利损失的第二部分是 $\mathcal{L}_{\mathrm{box}}(\cdot)$，它对边界框进行评分。与许多检测器相对于某些初始猜测进行 $\Delta$ 预测不同，我们直接进行边界框预测。虽然这种方法简化了实现，但它带来了损失相对缩放的问题。最常用的 $\ell_1$ 损失对于小框和大框会有不同的尺度，即使它们的相对误差相似。为了缓解这个问题，我们使用了 $\ell_1$ 损失和尺度不变的广义IoU损失[38] $\mathcal{L}_{\mathrm{iou}}(\cdot ,\cdot)$ 的线性组合。总的来说，我们的边界框损失 $\mathcal{L}_{\mathrm{box}}(b_i,\hat{b}_{\sigma (i)})$ 定义为 $\lambda_{\mathrm{iou}}\mathcal{L}_{\mathrm{iou}}(b_i,\hat{b}_{\sigma (i)}) + \lambda_{\mathrm{L1}}||b_i - \hat{b}_{\sigma (i)}||_1$，其中 $\lambda_{\mathrm{iou}},\lambda_{\mathrm{L1}}\in \mathbb{R}$ 是超参数。这两个损失通过批次内的目标数量进行归一化。
 
 ### 3.2 DETR架构
 
@@ -84,13 +86,13 @@ DETR通过解码器的一次前向传播，推断出一个固定大小的集合�
 
 与许多现代检测器不同，DETR可以在任何提供通用CNN骨干网络和Transformer架构实现的深度学习框架中实现，只需几百行代码。DETR的推理代码可以在PyTorch [32]中用不到50行代码实现。我们希望我们方法的简洁性能够吸引新的研究人员进入检测领域。
 
-**骨干网络**。从初始图像 \(x_{\mathrm{img}}\in \mathbb{R}^{3\times H_0\times W_0}\)（3个颜色通道）开始，一个传统的CNN骨干网络生成一个较低分辨率的激活图 \(f\in \mathbb{R}^{C\times H\times W}\)。我们使用的典型值是 \(C = 2048\) 和 \(H,W = \frac{H_0}{32},\frac{W_0}{32}\)。
+**骨干网络**。从初始图像 $x_{\mathrm{img}}\in \mathbb{R}^{3\times H_0\times W_0}$（3个颜色通道）开始，一个传统的CNN骨干网络生成一个较低分辨率的激活图 $f\in \mathbb{R}^{C\times H\times W}$。我们使用的典型值是 $C = 2048$ 和 $H,W = \frac{H_0}{32},\frac{W_0}{32}$。
 
-**Transformer编码器**。首先，一个1x1卷积将高层激活图 \(f\) 的通道维度从 \(C\) 减小到一个更小的维度 \(d\)，生成一个新的特征图 \(z_0\in \mathbb{R}^{d\times H\times W}\)。编码器期望一个序列作为输入，因此我们将 \(z_0\) 的空间维度展平为一维，得到一个 \(d\times HW\) 的特征图。每个编码器层具有标准架构，由一个多头自注意力模块和一个前馈网络（FFN）组成。由于Transformer架构是排列不变的，我们为其补充了固定的位置编码[31,3]，并将其添加到每个注意力层的输入中。我们将架构的详细定义推迟到补充材料中，它遵循[47]中描述的架构。
+**Transformer编码器**。首先，一个1x1卷积将高层激活图 $f$ 的通道维度从 $C$ 减小到一个更小的维度 $d$，生成一个新的特征图 $z_0\in \mathbb{R}^{d\times H\times W}$。编码器期望一个序列作为输入，因此我们将 $z_0$ 的空间维度展平为一维，得到一个 $d\times HW$ 的特征图。每个编码器层具有标准架构，由一个多头自注意力模块和一个前馈网络（FFN）组成。由于Transformer架构是排列不变的，我们为其补充了固定的位置编码[31,3]，并将其添加到每个注意力层的输入中。我们将架构的详细定义推迟到补充材料中，它遵循[47]中描述的架构。
 
-**Transformer解码器**。解码器遵循Transformer的标准架构，使用多头自注意力和编码器-解码器注意力机制，将 \(N\) 个大小为 \(d\) 的嵌入进行转换。与原始Transformer的区别在于，我们的模型在每个解码器层并行地解码 \(N\) 个目标，而Vaswani等人[47]使用的是逐个预测输出序列的自回归模型。我们请不熟悉概念的读者参考补充材料。由于解码器也是排列不变的，\(N\) 个输入嵌入必须不同才能产生不同的结果。这些输入嵌入是学习到的位置编码，我们称之为目标查询，与编码器类似，我们将它们添加到每个注意力层的输入中。\(N\) 个目标查询由解码器转换为输出嵌入。然后，它们被一个前馈网络（在下一小节中描述）独立地解码为边界框坐标和类别标签，产生 \(N\) 个最终预测。通过对这些嵌入使用自注意力和编码器-解码器注意力，该模型利用它们之间的成对关系全局地推理所有目标，同时能够使用整个图像作为上下文。
+**Transformer解码器**。解码器遵循Transformer的标准架构，使用多头自注意力和编码器-解码器注意力机制，将 $N$ 个大小为 $d$ 的嵌入进行转换。与原始Transformer的区别在于，我们的模型在每个解码器层并行地解码 $N$ 个目标，而Vaswani等人[47]使用的是逐个预测输出序列的自回归模型。我们请不熟悉概念的读者参考补充材料。由于解码器也是排列不变的，$N$ 个输入嵌入必须不同才能产生不同的结果。这些输入嵌入是学习到的位置编码，我们称之为目标查询，与编码器类似，我们将它们添加到每个注意力层的输入中。$N$ 个目标查询由解码器转换为输出嵌入。然后，它们被一个前馈网络（在下一小节中描述）独立地解码为边界框坐标和类别标签，产生 $N$ 个最终预测。通过对这些嵌入使用自注意力和编码器-解码器注意力，该模型利用它们之间的成对关系全局地推理所有目标，同时能够使用整个图像作为上下文。
 
-**预测前馈网络（FFNs）**。最终的预测由一个3层感知机（使用ReLU激活函数，隐藏维度为 \(d\)）和一个线性投影层计算得出。FFN预测相对于输入图像的归一化中心坐标、高度和宽度，线性层使用softmax函数预测类别标签。由于我们预测的是一个固定大小的 \(N\) 个边界框的集合，其中 \(N\) 通常远大于图像中实际感兴趣的目标数量，因此使用一个特殊的类别标签 \(\varnothing\) 来表示某个槽位内未检测到目标。这个类别在标准目标检测方法中扮演着类似于“背景”类的角色。
+**预测前馈网络（FFNs）**。最终的预测由一个3层感知机（使用ReLU激活函数，隐藏维度为 $d$）和一个线性投影层计算得出。FFN预测相对于输入图像的归一化中心坐标、高度和宽度，线性层使用softmax函数预测类别标签。由于我们预测的是一个固定大小的 $N$ 个边界框的集合，其中 $N$ 通常远大于图像中实际感兴趣的目标数量，因此使用一个特殊的类别标签 $\varnothing$ 来表示某个槽位内未检测到目标。这个类别在标准目标检测方法中扮演着类似于“背景”类的角色。
 
 **辅助解码损失**。我们发现，在训练期间使用解码器中的辅助损失[1]是有帮助的，特别是为了帮助模型输出正确数量的目标。
 
@@ -100,7 +102,7 @@ DETR通过解码器的一次前向传播，推断出一个固定大小的集合�
 
 **数据集**。我们在COCO 2017检测和全景分割数据集[24,18]上进行实验，该数据集包含118k张训练图像和5k张验证图像。每张图像都标注了边界框和全景分割。训练集中每张图像平均有7个实例，单张图像中最多有63个实例，在同一张图像中，目标尺寸从小覆盖到大。除非另有说明，我们报告的AP是边界框AP，即在多个阈值上的积分指标。为了与Faster R-CNN进行比较，我们报告最后一个训练周期的验证AP；对于消融研究，我们报告最后10个周期的验证结果的中位数。
 
-**技术细节**。我们使用AdamW [26]训练DETR，设置初始Transformer的学习率为 \(10^{- 4}\)，骨干网络的学习率为 \(10^{- 5}\)，权重衰减为 \(10^{- 4}\)。所有Transformer权重使用Xavier初始化[11]进行初始化，骨干网络使用来自TORCHVISION的ImageNet预训练ResNet模型[15]，并冻结批归一化层。我们报告了两种不同骨干网络的结果：ResNet-50和ResNet-101。相应的模型分别称为DETR和DETR-R101。遵循[21]，我们还通过在骨干网络的最后阶段添加空洞卷积并移除该阶段第一个卷积的步长来增加特征分辨率。相应的模型分别称为DETR-DC5和DETR-DC5-R101（膨胀的C5阶段）。这种修改将分辨率提高了两倍，从而提高了小目标的性能，但代价是编码器自注意力的计算成本增加了16倍，导致总体计算成本增加了2倍。这些模型与Faster R-CNN的FLOPs完整比较见表1。
+**技术细节**。我们使用AdamW [26]训练DETR，设置初始Transformer的学习率为 $10^{- 4}$，骨干网络的学习率为 $10^{- 5}$，权重衰减为 $10^{- 4}$。所有Transformer权重使用Xavier初始化[11]进行初始化，骨干网络使用来自TORCHVISION的ImageNet预训练ResNet模型[15]，并冻结批归一化层。我们报告了两种不同骨干网络的结果：ResNet-50和ResNet-101。相应的模型分别称为DETR和DETR-R101。遵循[21]，我们还通过在骨干网络的最后阶段添加空洞卷积并移除该阶段第一个卷积的步长来增加特征分辨率。相应的模型分别称为DETR-DC5和DETR-DC5-R101（膨胀的C5阶段）。这种修改将分辨率提高了两倍，从而提高了小目标的性能，但代价是编码器自注意力的计算成本增加了16倍，导致总体计算成本增加了2倍。这些模型与Faster R-CNN的FLOPs完整比较见表1。
 
 我们使用尺度增强，调整输入图像的大小，使得最短边至少为480像素，最多为800像素，同时最长边不超过1333像素[50]。为了帮助通过编码器的自注意力学习全局关系，我们在训练期间还应用了随机裁剪增强，性能提高了大约1个AP。具体来说，训练图像有0.5的概率被裁剪成一个随机矩形块，然后再次调整大小到800-1333。Transformer使用默认的0.1的dropout进行训练。在推理时，
 
@@ -134,7 +136,7 @@ Transformer通常使用Adam或Adagrad优化器以及非常长的训练计划和d
 | 6 | 86/23 | 41.3M | 40.6 | 61.6 | 19.9 | 44.3 | 60.2 |
 | 12 | 95/20 | 49.2M | 41.6 | 62.1 | 19.8 | 44.9 | 61.9 |
 
-9倍计划（109个周期）和所述增强训练的结果，这些增强总共增加了1-2个AP。在表1的最后部分，我们展示了多个DETR模型的结果。为了在参数数量上具有可比性，我们选择了一个具有6个Transformer层和6个解码器层、宽度为256、8个注意力头的模型。与带有FPN的Faster R-CNN一样，该模型有41.3M个参数，其中23.5M在ResNet-50中，17.8M在Transformer中。尽管更长的训练可能仍然会进一步改进Faster R-CNN和DETR，但我们可以得出结论，DETR在与Faster R-CNN具有相同参数数量的情况下具有竞争力，在COCO验证子集上达到了42 AP。DETR实现这一目标的方式是改进了 \(\mathrm{AP}_{\mathrm{L}}\)（+7.8），但请注意，该模型在 \(\mathrm{AP}_{\mathrm{S}}\) 上仍然落后（-5.5）。具有相同参数数量和相似FLOP计数的DETR-DC5具有更高的AP，但在 \(\mathrm{AP}_{\mathrm{S}}\) 上也仍然显著落后。使用ResNet-101骨干网络的Faster R-CNN和DETR也显示出可比的结果。
+9倍计划（109个周期）和所述增强训练的结果，这些增强总共增加了1-2个AP。在表1的最后部分，我们展示了多个DETR模型的结果。为了在参数数量上具有可比性，我们选择了一个具有6个Transformer层和6个解码器层、宽度为256、8个注意力头的模型。与带有FPN的Faster R-CNN一样，该模型有41.3M个参数，其中23.5M在ResNet-50中，17.8M在Transformer中。尽管更长的训练可能仍然会进一步改进Faster R-CNN和DETR，但我们可以得出结论，DETR在与Faster R-CNN具有相同参数数量的情况下具有竞争力，在COCO验证子集上达到了42 AP。DETR实现这一目标的方式是改进了 $\mathrm{AP}_{\mathrm{L}}$（+7.8），但请注意，该模型在 $\mathrm{AP}_{\mathrm{S}}$ 上仍然落后（-5.5）。具有相同参数数量和相似FLOP计数的DETR-DC5具有更高的AP，但在 $\mathrm{AP}_{\mathrm{S}}$ 上也仍然显著落后。使用ResNet-101骨干网络的Faster R-CNN和DETR也显示出可比的结果。
 
 ### 4.2 消融研究
 
@@ -145,7 +147,7 @@ Transformer解码器中的注意力机制是建模不同检测特征表示之间
 
 **编码器层数**。我们通过改变编码器层数来评估全局图像级自注意力的重要性（表2）。如果没有编码器层，总体AP下降了3.9个点，在大目标上下降更显著，达到6.0个AP。我们假设，通过使用全局场景推理，编码器对于分离目标至关重要。在图3中，我们可视化了训练模型的最后一个编码器层的注意力图，重点关注图像中的几个点。编码器似乎已经分离了各个实例，这可能简化了解码器的目标提取和定位。
 
-**解码器层数**。我们在每个解码层后应用辅助损失（见第3.2节），因此，预测FFN在设计上就被训练为从每个解码器层的输出中预测目标。我们通过评估在每个解码阶段可能预测的目标来分析每个解码器层的重要性（图4）。AP和 \(\mathrm{AP}_{50}\) 在每一层之后都有所提高，从第一层到最后一层总共带来了非常显著的 \(+8.2 / 9.5\) AP的提升。由于其基于集合的损失，DETR在设计上不需要NMS。为了验证这一点，我们对每个解码器后的输出运行标准NMS程序（使用默认参数[50]）。NMS提高了第一个解码器预测的性能。这可以解释为，Transformer的单次解码层无法计算输出元素之间的任何互相关性，因此容易对同一目标做出多个预测。在第二层及后续层中，激活上的自注意力机制允许模型抑制重复预测。我们观察到，随着深度的增加，NMS带来的改进逐渐减小。在最后几层，由于NMS错误地移除了真正例预测，我们观察到AP略有下降。
+**解码器层数**。我们在每个解码层后应用辅助损失（见第3.2节），因此，预测FFN在设计上就被训练为从每个解码器层的输出中预测目标。我们通过评估在每个解码阶段可能预测的目标来分析每个解码器层的重要性（图4）。AP和 $\mathrm{AP}_{50}$ 在每一层之后都有所提高，从第一层到最后一层总共带来了非常显著的 $+8.2 / 9.5$ AP的提升。由于其基于集合的损失，DETR在设计上不需要NMS。为了验证这一点，我们对每个解码器后的输出运行标准NMS程序（使用默认参数[50]）。NMS提高了第一个解码器预测的性能。这可以解释为，Transformer的单次解码层无法计算输出元素之间的任何互相关性，因此容易对同一目标做出多个预测。在第二层及后续层中，激活上的自注意力机制允许模型抑制重复预测。我们观察到，随着深度的增加，NMS带来的改进逐渐减小。在最后几层，由于NMS错误地移除了真正例预测，我们观察到AP略有下降。
 
 ![](../figures/Fig4.png)
 **图 4：每个解码器层后的 AP 和 AP50 性能。评估使用的是单次长计划基线模型。DETR 在设计上不需要 NMS，本图验证了这一点。NMS 在最后几层降低了 AP（移除了真正例预测），但在前几层提高了 AP（移除了重复预测），因为第一层没有信息交互，同时 AP50 略有提高。**
@@ -155,7 +157,7 @@ Transformer解码器中的注意力机制是建模不同检测特征表示之间
 
 与可视化编码器注意力类似，我们在图6中可视化解码器的注意力，用不同的颜色为每个预测目标的注意力图着色。我们观察到解码器注意力相当局部化，这意味着它主要关注目标的末端，如头部或腿部。我们假设，在编码器通过全局注意力分离实例后，解码器只需要关注末端来提取类别和对象边界。
 
-**FFN的重要性**。Transformer内部的FFN可以看作是 \(1 \times 1\) 卷积层，使得编码器类似于注意力增强的卷积网络[3]。我们尝试完全移除它，只在Transformer层中保留注意力。通过将网络参数从41.3M减少到28.7M，Transformer中仅剩10.8M，性能下降了2.3个AP，因此我们得出结论，FFN对于获得良好结果很重要。
+**FFN的重要性**。Transformer内部的FFN可以看作是 $1 \times 1$ 卷积层，使得编码器类似于注意力增强的卷积网络[3]。我们尝试完全移除它，只在Transformer层中保留注意力。通过将网络参数从41.3M减少到28.7M，Transformer中仅剩10.8M，性能下降了2.3个AP，因此我们得出结论，FFN对于获得良好结果很重要。
 
 **位置编码的重要性**。我们的模型中有两种位置编码：空间位置编码和输出位置编码（目标查询）。我们尝试了固定和可学习编码的各种组合，结果见表3。输出位置编码是必需的，不能移除，因此我们实验了在解码器输入时传递一次，或者在每个解码器注意力层将其添加到查询中。在第一个实验中，我们完全移除了空间位置编码，仅在输入时传递输出位置编码，有趣的是，该模型仍然达到了超过32的AP，比基线下降了7.8个AP。然后，我们像原始Transformer [47]那样，传递固定的正弦空间位置编码，并在输入时传递一次输出编码，发现与将位置编码直接传递到注意力层相比，这导致AP下降了1.4。将可学习的空间编码传递到注意力层得到了类似的结果。令人惊讶的是，我们发现完全不在编码器中传递任何空间编码仅导致AP轻微下降1.3。当我们将编码传递到注意力层时，它们在所有层之间共享，而输出编码（目标查询）始终是可学习的。
 
@@ -164,9 +166,7 @@ Transformer解码器中的注意力机制是建模不同检测特征表示之间
 ![](../figures/Fig6.png)
 **图6：可视化每个预测目标的解码器注意力（图像来自COCO验证集）。预测由DETR-DC5模型生成。注意力分数用不同颜色代表不同目标。解码器通常关注目标末端，如腿和头部。最好用彩色查看。**
 
-**损失消融**。为了评估匹配成本和损失的不同组成部分的重要性，我们训练了几个模型，分别打开和关闭它们。损失有三个组成部分：分类损失、\(\ell_{1}\) 边界框距离损失和GIoU [38]损失。分类损失对于训练是必不可少的，不能关闭，因此我们训练了一个没有边界框距离损失的模型，以及一个没有GIoU损失的模型，并与使用所有三个损失训练的基线进行比较。结果见表4。仅GIoU损失就占了模型性能的大部分，与使用组合损失的基线相比仅损失0.7个AP。使用 \(\ell_{1}\) 而不使用GIoU显示出较差的结果。我们仅研究了
-
-
+**损失消融**。为了评估匹配成本和损失的不同组成部分的重要性，我们训练了几个模型，分别打开和关闭它们。损失有三个组成部分：分类损失、$\ell_{1}$ 边界框距离损失和GIoU [38]损失。分类损失对于训练是必不可少的，不能关闭，因此我们训练了一个没有边界框距离损失的模型，以及一个没有GIoU损失的模型，并与使用所有三个损失训练的基线进行比较。结果见表4。仅GIoU损失就占了模型性能的大部分，与使用组合损失的基线相比仅损失0.7个AP。使用 $\ell_{1}$ 而不使用GIoU显示出较差的结果。我们仅研究了
 
 **表3：不同位置编码的结果，与基线（最后一行）相比，基线在编码器和解码器的每个注意力层都传递固定的正弦位置编码。可学习的嵌入在所有层之间共享。不使用空间位置编码会导致AP显著下降。有趣的是，仅在解码器中传递它们会导致AP轻微下降。所有这些模型都使用可学习的输出位置编码。**
 
@@ -179,7 +179,7 @@ Transformer解码器中的注意力机制是建模不同检测特征表示之间
 | none | sine at attn. | learned | at attn. | 39.3 | -1.3 | 60.3 | -1.4 |
 | sine at attn. | sine at attn. | learned | at attn. | 40.6 | - | 61.6 | - |
 
-**表4：损失分量对AP的影响。我们训练了两个模型，分别关闭了 \(\ell_{1}\) 损失和GIOU损失，观察到 \(\ell_{1}\) 单独使用效果很差，但与GIOU结合使用时，改善了 \(\mathrm{AP}_{\mathrm{M}}\) 和 \(\mathrm{AP}_{\mathrm{L}}\) 。我们的基线（最后一行）结合了两种损失。**
+**表4：损失分量对AP的影响。我们训练了两个模型，分别关闭了 $\ell_{1}$ 损失和GIOU损失，观察到 $\ell_{1}$ 单独使用效果很差，但与GIOU结合使用时，改善了 $\mathrm{AP}_{\mathrm{M}}$ 和 $\mathrm{AP}_{\mathrm{L}}$ 。我们的基线（最后一行）结合了两种损失。**
 
 | class | ℓ1 | GIOU | AP | Δ | AP50 | Δ | APs | APM | APL |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -194,7 +194,7 @@ Transformer解码器中的注意力机制是建模不同检测特征表示之间
 **解码器输出槽位分析**。在图7中，我们可视化了COCO 2017验证集中所有图像的不同槽位预测的边界框。DETR为每个查询槽位学习不同的特化。我们观察到每个槽位都有几种操作模式，关注不同的区域和框尺寸。特别是，所有槽位都有预测图像级大框的模式（在图中显示为中间对齐的红点）。我们假设这与COCO中目标的分布有关。
 
 ![](../figures/Fig7.png)
-**图 7：DETR 解码器中全部 \(N = 100\) 个预测槽位中的 20 个，在 COCO 2017 验证集所有图像上的所有边界框预测可视化。每个边界框预测表示为以其中心为坐标的点，位于按每张图像尺寸归一化的 1×1 正方形内。点用颜色编码：绿色对应小框，红色对应大的水平框，蓝色对应大的垂直框。我们观察到每个槽位学会了特定区域和框尺寸的特化，具有多种操作模式。我们注意到几乎所有的槽位都有一个预测图像级大框的模式，这在 COCO 数据集中很常见。**
+**图 7：DETR 解码器中全部 $N = 100$ 个预测槽位中的 20 个，在 COCO 2017 验证集所有图像上的所有边界框预测可视化。每个边界框预测表示为以其中心为坐标的点，位于按每张图像尺寸归一化的 $1\times 1$ 正方形内。点用颜色编码：绿色对应小框，红色对应大的水平框，蓝色对应大的垂直框。我们观察到每个槽位学会了特定区域和框尺寸的特化，具有多种操作模式。我们注意到几乎所有的槽位都有一个预测图像级大框的模式，这在 COCO 数据集中很常见。**
 
 **对未见过的实例数量的泛化能力**。COCO中的某些类别在单张图像中并未很好地以大量同一类别的实例呈现。例如，训练集中没有一张图像包含超过13只长颈鹿。我们创建了一个合成图像<sup>3</sup>来验证DETR的泛化能力（见图5）。我们的模型能够找到图像中的所有24只长颈鹿，这明显是分布外的。这个实验证实了每个目标查询中没有强烈的类别特化。
 
@@ -210,7 +210,7 @@ Transformer解码器中的注意力机制是建模不同检测特征表示之间
 
 我们在COCO数据集的全景分割标注上进行实验，该数据集除了80个thing类别外，还有53个stuff类别。
 
-我们使用相同的方案训练DETR预测COCO上的stuff和thing类别的边界框。预测边界框对于训练是必需的，因为匈牙利匹配是使用框之间的距离计算的。我们还添加了一个掩码头，为每个预测的边界框预测一个二值掩码，见图8。它以每个目标的Transformer解码器输出作为输入，并计算该嵌入在编码器输出上的多头（\(M\)个头）注意力分数，为每个目标以小分辨率生成 \(M\) 个注意力热图。为了进行最终预测并提高分辨率，使用了类似FPN的架构。我们在补充材料中更详细地描述了该架构。掩码的最终分辨率为步长4，每个掩码使用DICE/F-1损失[28]和Focal损失[23]独立监督。
+我们使用相同的方案训练DETR预测COCO上的stuff和thing类别的边界框。预测边界框对于训练是必需的，因为匈牙利匹配是使用框之间的距离计算的。我们还添加了一个掩码头，为每个预测的边界框预测一个二值掩码，见图8。它以每个目标的Transformer解码器输出作为输入，并计算该嵌入在编码器输出上的多头（$M$个头）注意力分数，为每个目标以小分辨率生成 $M$ 个注意力热图。为了进行最终预测并提高分辨率，使用了类似FPN的架构。我们在补充材料中更详细地描述了该架构。掩码的最终分辨率为步长4，每个掩码使用DICE/F-1损失[28]和Focal损失[23]独立监督。
 
 掩码头可以联合训练，也可以分两步训练：我们首先仅训练用于框的DETR，然后冻结所有权重，仅训练掩码头25个周期。实验上，这两种方法给出了相似的结果，我们使用后一种方法报告结果，因为它导致更短的总训练时间。
 
@@ -228,9 +228,9 @@ Transformer解码器中的注意力机制是建模不同检测特征表示之间
 
 为了预测最终的全景分割，我们只需在每个像素上对掩码分数使用argmax，并将相应的类别分配给生成的掩码。这个过程保证了最终的掩码没有重叠，因此DETR不需要通常用于对齐不同掩码的启发式规则[19]。
 
-**训练细节**。我们按照边界框检测的方案训练DETR、DETR-DC5和DETR-R101模型，以预测COCO数据集中stuff和thing类别的边界框。新的掩码头训练25个周期（详情见补充材料）。在推理过程中，我们首先过滤掉置信度低于 \(85\%\) 的检测，然后计算逐像素argmax以确定每个像素属于哪个掩码。然后我们将相同stuff类别的不同掩码预测合并，并过滤掉空的（少于4个像素）。
+**训练细节**。我们按照边界框检测的方案训练DETR、DETR-DC5和DETR-R101模型，以预测COCO数据集中stuff和thing类别的边界框。新的掩码头训练25个周期（详情见补充材料）。在推理过程中，我们首先过滤掉置信度低于 $85\%$ 的检测，然后计算逐像素argmax以确定每个像素属于哪个掩码。然后我们将相同stuff类别的不同掩码预测合并，并过滤掉空的（少于4个像素）。
 
-**主要结果**。定性结果如图9所示。在表5中，我们将我们的统一全景分割方法与几种以不同方式处理thing和stuff的成熟方法进行了比较。我们报告了全景质量（PQ）及其在thing \(\mathrm{(PQ^{th})}\) 和stuff \(\mathrm{(PQ^{st})}\) 上的分解。我们还报告了掩码AP（在thing类别上计算），在任何全景后处理之前（在我们的例子中，是在逐像素argmax之前）。我们展示了DETR在COCO-val 2017上优于已发表的结果，以及我们强大的PanopticFPN基线（为公平比较，使用了与DETR相同的数据增强进行训练）。结果分解显示，DETR在stuff类别上尤其占主导地位，我们假设编码器注意力允许的全局推理是实现这一结果的关键因素。对于thing类别，尽管在掩码AP计算上比基线有高达8个mAP的严重劣势，但DETR仍获得了有竞争力的 \(\mathrm{PQ^{th}}\) 。我们还在COCO数据集的测试集上评估了我们的方法，获得了46的PQ。我们希望我们的方法能够激励未来工作中对完全统一的全景分割模型的探索。
+**主要结果**。定性结果如图9所示。在表5中，我们将我们的统一全景分割方法与几种以不同方式处理thing和stuff的成熟方法进行了比较。我们报告了全景质量（PQ）及其在thing $\mathrm{(PQ^{th})}$ 和stuff $\mathrm{(PQ^{st})}$ 上的分解。我们还报告了掩码AP（在thing类别上计算），在任何全景后处理之前（在我们的例子中，是在逐像素argmax之前）。我们展示了DETR在COCO-val 2017上优于已发表的结果，以及我们强大的PanopticFPN基线（为公平比较，使用了与DETR相同的数据增强进行训练）。结果分解显示，DETR在stuff类别上尤其占主导地位，我们假设编码器注意力允许的全局推理是实现这一结果的关键因素。对于thing类别，尽管在掩码AP计算上比基线有高达8个mAP的严重劣势，但DETR仍获得了有竞争力的 $\mathrm{PQ^{th}}$ 。我们还在COCO数据集的测试集上评估了我们的方法，获得了46的PQ。我们希望我们的方法能够激励未来工作中对完全统一的全景分割模型的探索。
 
 ## 5 结论
 
@@ -245,57 +245,109 @@ Transformer解码器中的注意力机制是建模不同检测特征表示之间
 ## 参考文献
 
 [1] Al-Rfou, R., Choe, D., Constant, N., Guo, M., Jones, L.: Character-level language modeling with deeper self-attention. In: AAAI Conference on Artificial Intelligence (2019)
+
 [2] Bahdanau, D., Cho, K., Bengio, Y.: Neural machine translation by jointly learning to align and translate. In: ICLR (2015)
+
 [3] Bello, I., Zoph, B., Vaswani, A., Shlens, J., Le, Q.V.: Attention augmented convolutional networks. In: ICCV (2019)
+
 [4] Bodla, N., Singh, B., Chellappa, R., Davis, L.S.: Soft-NMS improving object detection with one line of code. In: ICCV (2017)
+
 [5] Cai, Z., Vasconcelos, N.: Cascade R-CNN: High quality object detection and instance segmentation. PAMI (2019)
+
 [6] Chan, W., Saharia, C., Hinton, G., Norouzi, M., Jaitly, N.: Imputer: Sequence modelling via imputation and dynamic programming. arXiv:2002.08926 (2020)
+
 [7] Cordonnier, J.B., Loukas, A., Jaggi, M.: On the relationship between self-attention and convolutional layers. In: ICLR (2020)
+
 [8] Devlin, J., Chang, M.W., Lee, K., Toutanova, K.: BERT: Pre-training of deep bidirectional transformers for language understanding. In: NAACL-HLT (2019)
+
 [9] Erhan, D., Szegedy, C., Toshev, A., Anguelov, D.: Scalable object detection using deep neural networks. In: CVPR (2014)
+
 [10] Ghazvininejad, M., Levy, O., Liu, Y., Zettlemoyer, L.: Mask-predict: Parallel decoding of conditional masked language models. arXiv:1904.09324 (2019)
+
 [11] Glorot, X., Bengio, Y.: Understanding the difficulty of training deep feedforward neural networks. In: AISTATS (2010)
+
 [12] Gu, J., Bradbury, J., Xiong, C., Li, V.O., Socher, R.: Non-autoregressive neural machine translation. In: ICLR (2018)
+
 [13] He, K., Girshick, R., Dollar, P.: Rethinking imagenet pre-training. In: ICCV (2019)
+
 [14] He, K., Gkioxari, G., Dollar, P., Girshick, R.B.: Mask R-CNN. In: ICCV (2017)
+
 [15] He, K., Zhang, X., Ren, S., Sun, J.: Deep residual learning for image recognition. In: CVPR (2016)
+
 [16] Hosang, J.H., Benenson, R., Schiele, B.: Learning non-maximum suppression. In: CVPR (2017)
+
 [17] Hu, H., Gu, J., Zhang, Z., Dai, J., Wei, Y.: Relation networks for object detection. In: CVPR (2018)
+
 [18] Kirillov, A., Girshick, R., He, K., Dollar, P.: Panoptic feature pyramid networks. In: CVPR (2019)
+
 [19] Kirillov, A., He, K., Girshick, R., Rother, C., Dollar, P.: Panoptic segmentation. In: CVPR (2019)
+
 [20] Kuhn, H.W.: The hungarian method for the assignment problem (1955)
+
 [21] Li, Y., Qi, H., Dai, J., Ji, X., Wei, Y.: Fully convolutional instance-aware semantic segmentation. In: CVPR (2017)
+
 [22] Lin, T.Y., Dollar, P., Girshick, R., He, K., Hariharan, B., Belongie, S.: Feature pyramid networks for object detection. In: CVPR (2017)
+
 [23] Lin, T.Y., Goyal, P., Girshick, R.B., He, K., Dollar, P.: Focal loss for dense object detection. In: ICCV (2017)
+
 [24] Lin, T.Y., Maire, M., Belongie, S., Hays, J., Perona, P., Ramanan, D., Dollar, P., Zitnick, C.L.: Microsoft COCO: Common objects in context. In: ECCV (2014)
+
 [25] Liu, W., Anguelov, D., Erhan, D., Szegedy, C., Reed, S.E., Fu, C.Y., Berg, A.C.: Ssd: Single shot multibox detector. In: ECCV (2016)
+
 [26] Loshchilov, I., Hutter, F.: Decoupled weight decay regularization. In: ICLR (2017)
+
 [27] Lüscher, C., Beck, E., Irie, K., Kitza, M., Michel, W., Zeyer, A., Schlüter, R., Ney, H.: Rwth asr systems for librispeech: Hybrid vs attention - w/o data augmentation. arXiv:1905.03072 (2019)
+
 [28] Milletari, F., Navab, N., Ahmadi, S.A.: V-net: Fully convolutional neural networks for volumetric medical image segmentation. In: 3DV (2016)
+
 [29] Oord, A.v.d., Li, Y., Babuschkin, I., Simonyan, K., Vinyals, O., Kavukcuoglu, K., Driessche, G.v.d., Lockhart, E., Cobo, L.C., Stimberg, F., et al.: Parallel wavenet: Fast high-fidelity speech synthesis. arXiv:1711.10433 (2017)
+
 [30] Park, E., Berg, A.C.: Learning to decompose for object detection and instance segmentation. arXiv:1511.06449 (2015)
+
 [31] Parmar, N., Vaswani, A., Uszkoreit, J., Kaiser, L., Shazeer, N., Ku, A., Tran, D.: Image transformer. In: ICML (2018)
+
 [32] Paszke, A., Gross, S., Massa, F., Lerer, A., Bradbury, J., Chanan, G., Killeen, T., Lin, Z., Gimelshein, N., Antiga, L., Desmaison, A., Kopf, A., Yang, E., DeVito, Z., Raison, M., Tejani, A., Chilamkurthy, S., Steiner, B., Fang, L., Bai, J., Chintala, S.: Pytorch: An imperative style, high-performance deep learning library. In: NeurIPS (2019)
+
 [33] Pineda, L., Salvador, A., Drozdzal, M., Romero, A.: Elucidating image-to-set prediction: An analysis of models, losses and datasets. arXiv:1904.05709 (2019)
+
 [34] Radford, A., Wu, J., Child, R., Luan, D., Amodei, D., Sutskever, I.: Language models are unsupervised multitask learners (2019)
+
 [35] Redmon, J., Divvala, S., Girshick, R., Farhadi, A.: You only look once: Unified, real-time object detection. In: CVPR (2016)
+
 [36] Ren, M., Zemel, R.S.: End-to-end instance segmentation with recurrent attention. In: CVPR (2017)
+
 [37] Ren, S., He, K., Girshick, R.B., Sun, J.: Faster R-CNN: Towards real-time object detection with region proposal networks. PAMI (2015)
+
 [38] Rezatofighi, H., Tsoi, N., Gwak, J., Sadeghian, A., Reid, I., Savarese, S.: Generalized intersection over union. In: CVPR (2019)
+
 [39] Rezatofighi, S.H., Kaskman, R., Motlagh, F.T., Shi, Q., Cremers, D., Leal-Taixe, L., Reid, I.: Deep perm-set net: Learn to predict sets with unknown permutation and cardinality using deep neural networks. arXiv:1805.00613 (2018)
+
 [40] Rezatofighi, S.H., Milan, A., Abbasnejad, E., Dick, A., Reid, I., Kaskman, R., Cremers, D., Leal-Taixe, I.: Deepsnetnet: Predicting sets with deep neural networks. In: ICCV (2017)
+
 [41] Romera-Paredes, B., Torr, P.H.S.: Recurrent instance segmentation. In: ECCV (2015)
+
 [42] Salvador, A., Bellver, M., Baradad, M., Marques, F., Torres, J., Giro, X.: Recurrent neural networks for semantic instance segmentation. arXiv:1712.00617 (2017)
+
 [43] Stewart, R.J., Andriluka, M., Ng, A.Y.: End-to-end people detection in crowded scenes. In: CVPR (2015)
+
 [44] Sutskever, I., Vinyals, O., Le, Q.V.: Sequence to sequence learning with neural networks. In: NeurIPS (2014)
+
 [45] Synnaeve, G., Xu, Q., Kahn, J., Grave, E., Likhomanenko, T., Pratap, V., Sriram, A., Liptchinsky, V., Collobert, R.: End-to-end ASR: from supervised to semi-supervised learning with modern architectures. arXiv:1911.08460 (2019)
+
 [46] Tian, Z., Shen, C., Chen, H., He, T.: FCOS: Fully convolutional one-stage object detection. In: ICCV (2019)
+
 [47] Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.N., Kaiser, L., Polosukhin, I.: Attention is all you need. In: NeurIPS (2017)
+
 [48] Vinyals, O., Bengio, S., Kudlur, M.: Order matters: Sequence to sequence for sets. In: ICLR (2016)
+
 [49] Wang, X., Girshick, R.B., Gupta, A., He, K.: Non-local neural networks. In: CVPR (2018)
+
 [50] Wu, Y., Kirillov, A., Massa, F., Lo, W.Y., Girshick, R.: Detectron2. https://github.com/facebookresearch/detectron2 (2019)
+
 [51] Xiong, Y., Liao, R., Zhao, H., Hu, R., Bai, M., Yumer, E., Urtasun, R.: Upsnet: A unified panoptic segmentation network. In: CVPR (2019)
+
 [52] Zhang, S., Chi, C., Yao, Y., Lei, Z., Li, S.Z.: Bridging the gap between anchor-based and anchor-free detection via adaptive training sample selection. arXiv:1912.02424 (2019)
+
 [53] Zhou, X., Wang, D., Krahenbühl, P.: Objects as points. arXiv:1904.07850 (2019)
 
 ## 附录 A
@@ -304,51 +356,51 @@ Transformer解码器中的注意力机制是建模不同检测特征表示之间
 
 由于我们的模型基于Transformer架构，这里为详尽起见回顾一下我们使用的注意力机制的一般形式。注意力机制遵循[47]，但位置编码的细节（见公式8）遵循[7]。
 
-**多头**。具有 \(M\) 个维度为 \(d\) 的头的一般形式的多头注意力是一个具有以下签名的函数（使用 \(d^{\prime} = \frac{d}{M}\)，并在下划线给出矩阵/张量的大小）：
+**多头**。具有 $M$ 个维度为 $d$ 的头的一般形式的多头注意力是一个具有以下签名的函数（使用 $d^{\prime} = \frac{d}{M}$，并在下划线给出矩阵/张量的大小）：
 
-\[\mathrm{mh - attn}:\underbrace{X_{\mathrm{q}}}_{d\times N_{\mathrm{q}}},\underbrace{X_{\mathrm{kv}}}_{d\times N_{\mathrm{kv}}},\underbrace{T}_{M\times 3\times d^{\prime}\times d},\underbrace{L}_{d\times d}\mapsto \underbrace{\tilde{X}_{\mathrm{q}}}_{d\times N_{\mathrm{q}}} \quad (3)\]
+$$\mathrm{mh - attn}:\underbrace{X_{\mathrm{q}}}_{d\times N_{\mathrm{q}}},\underbrace{X_{\mathrm{kv}}}_{d\times N_{\mathrm{kv}}},\underbrace{T}_{M\times 3\times d^{\prime}\times d},\underbrace{L}_{d\times d}\mapsto \underbrace{\tilde{X}_{\mathrm{q}}}_{d\times N_{\mathrm{q}}} \quad (3)$$
 
-其中 \(X_{\mathrm{q}}\) 是长度为 \(N_{\mathrm{q}}\) 的查询序列，\(X_{\mathrm{kv}}\) 是长度为 \(N_{\mathrm{kv}}\) 的键-值序列（为简化说明，假设具有相同的通道数 \(d\)），\(T\) 是用于计算所谓的查询、键和值嵌入的权重张量，\(L\) 是一个投影矩阵。输出与查询序列大小相同。在给出细节之前，多头自注意力（mh-s-attn）是 \(X_{\mathrm{q}} = X_{\mathrm{kv}}\) 的特殊情况，即
+其中 $X_{\mathrm{q}}$ 是长度为 $N_{\mathrm{q}}$ 的查询序列，$X_{\mathrm{kv}}$ 是长度为 $N_{\mathrm{kv}}$ 的键-值序列（为简化说明，假设具有相同的通道数 $d$），$T$ 是用于计算所谓的查询、键和值嵌入的权重张量，$L$ 是一个投影矩阵。输出与查询序列大小相同。在给出细节之前，多头自注意力（mh-s-attn）是 $X_{\mathrm{q}} = X_{\mathrm{kv}}$ 的特殊情况，即
 
-\[\mathrm{mh - s - attn}(X,T,L) = \mathrm{mh - attn}(X,X,T,L). \quad (4)\]
+$$\mathrm{mh - s - attn}(X,T,L) = \mathrm{mh - attn}(X,X,T,L). \quad (4)$$
 
-多头注意力就是 \(M\) 个单注意力头的拼接，然后通过 \(L\) 进行投影。常见的做法[47]是使用残差连接、dropout和层归一化。换句话说，记 \(\tilde{X}_{\mathrm{q}} =\) \(\mathrm{mh - attn}(X_{\mathrm{q}},X_{\mathrm{kv}},T,L)\) 并将 \(\tilde{X}^{(q)}\) 记作注意力头的拼接，我们有
+多头注意力就是 $M$ 个单注意力头的拼接，然后通过 $L$ 进行投影。常见的做法[47]是使用残差连接、dropout和层归一化。换句话说，记 $\tilde{X}_{\mathrm{q}} =$ $\mathrm{mh - attn}(X_{\mathrm{q}},X_{\mathrm{kv}},T,L)$ 并将 $\tilde{X}^{(q)}$ 记作注意力头的拼接，我们有
 
-\[\begin{array}{rl} & X_{\mathrm{q}}^{\prime} = [\mathrm{attn}(X_{\mathrm{q}},X_{\mathrm{kv}},T_{1});\dots ;\mathrm{attn}(X_{\mathrm{q}},X_{\mathrm{kv}},T_{M})]\\ & \tilde{X}_{\mathrm{q}} = \mathrm{layernorm}(X_{\mathrm{q}} + \mathrm{dropout}(LX_{\mathrm{q}}^{\prime})), \end{array} \quad (6)\]
+$$\begin{array}{rl} & X_{\mathrm{q}}^{\prime} = [\mathrm{attn}(X_{\mathrm{q}},X_{\mathrm{kv}},T_{1});\dots ;\mathrm{attn}(X_{\mathrm{q}},X_{\mathrm{kv}},T_{M})]\\ & \tilde{X}_{\mathrm{q}} = \mathrm{layernorm}(X_{\mathrm{q}} + \mathrm{dropout}(LX_{\mathrm{q}}^{\prime})), \end{array} \quad (6)$$
 
-其中 \([:]\) 表示在通道轴上的拼接。
+其中 $[:]$ 表示在通道轴上的拼接。
 
-**单头**。一个具有权重张量 \(T^{\prime}\in \mathbb{R}^{3\times d^{\prime}\times d}\) 的注意力头，记作 \(\mathrm{attn}(X_{\mathrm{q}},X_{\mathrm{kv}},T^{\prime})\)，依赖于额外添加的位置编码 \(P_{\mathrm{q}}\in \mathbb{R}^{d\times N_{\mathrm{q}}}\) 和 \(P_{\mathrm{kv}}\in \mathbb{R}^{d\times N_{\mathrm{kv}}}\)。它首先计算在添加查询和键位置编码[7]后的所谓查询、键和值嵌入：
+**单头**。一个具有权重张量 $T^{\prime}\in \mathbb{R}^{3\times d^{\prime}\times d}$ 的注意力头，记作 $\mathrm{attn}(X_{\mathrm{q}},X_{\mathrm{kv}},T^{\prime})$，依赖于额外添加的位置编码 $P_{\mathrm{q}}\in \mathbb{R}^{d\times N_{\mathrm{q}}}$ 和 $P_{\mathrm{kv}}\in \mathbb{R}^{d\times N_{\mathrm{kv}}}$。它首先计算在添加查询和键位置编码[7]后的所谓查询、键和值嵌入：
 
-\[[Q;K;V] = [T_1'(X_{\mathrm{q}} + P_{\mathrm{q}});T_2'(X_{\mathrm{kv}} + P_{\mathrm{kv}});T_3'X_{\mathrm{kv}}] \quad (7)\]
+$$[Q;K;V] = [T_1'(X_{\mathrm{q}} + P_{\mathrm{q}});T_2'(X_{\mathrm{kv}} + P_{\mathrm{kv}});T_3'X_{\mathrm{kv}}] \quad (7)$$
 
-其中 \(T^{\prime}\) 是 \(T_{1}^{\prime},T_{2}^{\prime},T_{3}^{\prime}\) 的拼接。然后基于查询和键之间点积的softmax计算注意力权重 \(\alpha\)，使得查询序列的每个元素关注键-值序列的所有元素（\(i\) 是查询索引，\(j\) 是键-值索引）：
+其中 $T^{\prime}$ 是 $T_{1}^{\prime},T_{2}^{\prime},T_{3}^{\prime}$ 的拼接。然后基于查询和键之间点积的softmax计算注意力权重 $\alpha$，使得查询序列的每个元素关注键-值序列的所有元素（$i$ 是查询索引，$j$ 是键-值索引）：
 
-\[\alpha_{i,j} = \frac{e^{\frac{1}{\sqrt{d^{\prime}}}Q_{i}^{T}K_{j}}}{Z_{i}}\mathrm{~where~}Z_{i} = \sum_{j = 1}^{N_{\mathrm{kv}}}e^{\frac{1}{\sqrt{d^{\prime}}}Q_{i}^{T}K_{j}}. \quad (8)\]
+$$\alpha_{i,j} = \frac{e^{\frac{1}{\sqrt{d^{\prime}}}Q_{i}^{T}K_{j}}}{Z_{i}}\mathrm{~where~}Z_{i} = \sum_{j = 1}^{N_{\mathrm{kv}}}e^{\frac{1}{\sqrt{d^{\prime}}}Q_{i}^{T}K_{j}}. \quad (8)$$
 
-在我们的例子中，位置编码可以是可学习的或固定的，但对于给定的查询/键-值序列，在所有注意力层中共享，因此我们没有将它们显式地写成注意力的参数。在描述编码器和解码器时，我们会给出它们确切值的更多细节。最终输出是由注意力权重加权的值的聚合：第 \(i\) 行由下式给出 \(\operatorname {attn}_i(X_{\mathrm{q}},X_{\mathrm{kv}},T^{\prime}) = \sum_{j = 1}^{N_{\mathrm{kv}}}\alpha_{i,j}V_{j}\)。
+在我们的例子中，位置编码可以是可学习的或固定的，但对于给定的查询/键-值序列，在所有注意力层中共享，因此我们没有将它们显式地写成注意力的参数。在描述编码器和解码器时，我们会给出它们确切值的更多细节。最终输出是由注意力权重加权的值的聚合：第 $i$ 行由下式给出 $\operatorname {attn}_i(X_{\mathrm{q}},X_{\mathrm{kv}},T^{\prime}) = \sum_{j = 1}^{N_{\mathrm{kv}}}\alpha_{i,j}V_{j}$。
 
-**前馈网络（FFN）层**。原始Transformer交替使用多头注意力和所谓的FFN层[47]，后者实际上是多层1x1卷积，在我们的例子中具有 \(Md\) 个输入和输出通道。我们考虑的FFN由两层具有ReLU激活的1x1卷积组成。在这两层之后，也有一个残差连接/dropout/层归一化，类似于公式6。
+**前馈网络（FFN）层**。原始Transformer交替使用多头注意力和所谓的FFN层[47]，后者实际上是多层1x1卷积，在我们的例子中具有 $Md$ 个输入和输出通道。我们考虑的FFN由两层具有ReLU激活的1x1卷积组成。在这两层之后，也有一个残差连接/dropout/层归一化，类似于公式6。
 
 ### A.2 损失函数
 
 为完整起见，我们详细介绍了方法中使用的损失函数。所有损失通过批次内的目标数量进行归一化。对于分布式训练必须格外小心：由于每个GPU接收一个子批次，仅用本地批次中的目标数量进行归一化是不够的，因为通常子批次在GPU之间是不平衡的。相反，用所有子批次中的目标总数进行归一化非常重要。
 
-**边界框损失**。类似于[41,36]，我们在损失中使用了Intersection over Union的软版本，以及一个 \(\ell_{1}\) 损失：
+**边界框损失**。类似于[41,36]，我们在损失中使用了Intersection over Union的软版本，以及一个 $\ell_{1}$ 损失：
 
-\[\mathcal{L}_{\mathrm{box}}(b_{\sigma (i)},\hat{b}_i) = \lambda_{\mathrm{ioU}}\mathcal{L}_{\mathrm{ioU}}(b_{\sigma (i)},\hat{b}_i) + \lambda_{\mathrm{L1}}||b_{\sigma (i)} - \hat{b}_i||_1, \quad (9)\]
+$$\mathcal{L}_{\mathrm{box}}(b_{\sigma (i)},\hat{b}_i) = \lambda_{\mathrm{ioU}}\mathcal{L}_{\mathrm{ioU}}(b_{\sigma (i)},\hat{b}_i) + \lambda_{\mathrm{L1}}||b_{\sigma (i)} - \hat{b}_i||_1, \quad (9)$$
 
-其中 \(\lambda_{\mathrm{ioU}},\lambda_{\mathrm{L1}}\in \mathbb{R}\) 是超参数，\(\mathcal{L}_{\mathrm{ioU}}(\cdot)\) 是广义IoU [38]：
+其中 $\lambda_{\mathrm{ioU}},\lambda_{\mathrm{L1}}\in \mathbb{R}$ 是超参数，$\mathcal{L}_{\mathrm{ioU}}(\cdot)$ 是广义IoU [38]：
 
-\[\mathcal{L}_{\mathrm{ioU}}(b_{\sigma (i)},\hat{b}_i) = 1 - \left(\frac{|b_{\sigma(i)}\cap\hat{b}_i|}{|b_{\sigma(i)}\cup\hat{b}_i|} -\frac{|B(b_{\sigma(i)},\hat{b}_i)\setminus b_{\sigma(i)}\cup\hat{b}_i|}{|B(b_{\sigma(i)},\hat{b}_i)|}\right). \quad (10)\]
+$$\mathcal{L}_{\mathrm{ioU}}(b_{\sigma (i)},\hat{b}_i) = 1 - \left(\frac{|b_{\sigma(i)}\cap\hat{b}_i|}{|b_{\sigma(i)}\cup\hat{b}_i|} -\frac{|B(b_{\sigma(i)},\hat{b}_i)\setminus b_{\sigma(i)}\cup\hat{b}_i|}{|B(b_{\sigma(i)},\hat{b}_i)|}\right). \quad (10)$$
 
-\(|\cdot |\) 表示“面积”，使用框坐标的并集和交集作为框本身的简写。并集或交集的面积通过 \(b_{\sigma (i)}\) 和 \(\hat{b}_i\) 的 \(\min\)/\(\max\) 线性函数计算，这使得损失对于随机梯度具有足够良好的表现。\(B(b_{\sigma (i)},\hat{b}_i)\) 表示包含 \(b_{\sigma (i)},\hat{b}_i\) 的最大框（涉及 \(B\) 的面积也基于框坐标的 \(\min\)/\(\max\) 线性函数计算）。
+$|\cdot |$ 表示“面积”，使用框坐标的并集和交集作为框本身的简写。并集或交集的面积通过 $b_{\sigma (i)}$ 和 $\hat{b}_i$ 的 $\min$/$\max$ 线性函数计算，这使得损失对于随机梯度具有足够良好的表现。$B(b_{\sigma (i)},\hat{b}_i)$ 表示包含 $b_{\sigma (i)},\hat{b}_i$ 的最大框（涉及 $B$ 的面积也基于框坐标的 $\min$/$\max$ 线性函数计算）。
 
-**DICE/F-1 损失 [28]**。DICE系数与Intersection over Union密切相关。如果我们用 \(\hat{m}\) 表示模型的原始掩码logits预测，用 \(m\) 表示二值目标掩码，则损失定义为：
+**DICE/F-1 损失 [28]**。DICE系数与Intersection over Union密切相关。如果我们用 $\hat{m}$ 表示模型的原始掩码logits预测，用 $m$ 表示二值目标掩码，则损失定义为：
 
-\[\mathcal{L}_{\mathrm{DICE}}(m,\hat{m}) = 1 - \frac{2m\sigma(\hat{m}) + 1}{\sigma(\hat{m}) + m + 1} \quad (11)\]
+$$\mathcal{L}_{\mathrm{DICE}}(m,\hat{m}) = 1 - \frac{2m\sigma(\hat{m}) + 1}{\sigma(\hat{m}) + m + 1} \quad (11)$$
 
-其中 \(\sigma\) 是sigmoid函数。这个损失通过目标数量进行归一化。
+其中 $\sigma$ 是sigmoid函数。这个损失通过目标数量进行归一化。
 
 ### A.3 详细架构
 
@@ -357,23 +409,23 @@ DETR中使用的Transformer的详细描述，以及在每个注意力层传递�
 ![](../figures/Fig10.png)
 **图10：DETR的Transformer架构。详情请参见A.3节。**
 
-**计算复杂度**。编码器中的每个自注意力具有复杂度 \(\mathcal{O}(d^2 HW + d(HW)^2)\)：\(\mathcal{O}(d'd)\) 是计算单个查询/键/值嵌入的成本（且 \(Md' = d\)），而 \(\mathcal{O}(d'(HW)^2)\) 是计算一个头的注意力权重的成本。其他计算可忽略。在解码器中，每个自注意力的复杂度为 \(\mathcal{O}(d^2 N + dN^2)\)，编码器和解码器之间的交叉注意力复杂度为 \(\mathcal{O}(d^2 (N + HW) + dNHW)\)，这比编码器低得多，因为在实践中 \(N \ll HW\)。
+**计算复杂度**。编码器中的每个自注意力具有复杂度 $\mathcal{O}(d^2 HW + d(HW)^2)$：$\mathcal{O}(d'd)$ 是计算单个查询/键/值嵌入的成本（且 $Md' = d$），而 $\mathcal{O}(d'(HW)^2)$ 是计算一个头的注意力权重的成本。其他计算可忽略。在解码器中，每个自注意力的复杂度为 $\mathcal{O}(d^2 N + dN^2)$，编码器和解码器之间的交叉注意力复杂度为 $\mathcal{O}(d^2 (N + HW) + dNHW)$，这比编码器低得多，因为在实践中 $N \ll HW$。
 
 **FLOPs计算**。鉴于Faster R-CNN的FLOPS取决于图像中的提议框数量，我们报告了COCO 2017验证集前100张图像的平均FLOPS数。我们使用Detectron2 [50]中的工具flop_count_operators计算FLOPS。我们将其用于Detectron2模型时未做修改，并对其进行了扩展，以考虑DETR模型中的批量矩阵乘法（bmm）。
 
 ### A.4 训练超参数
 
-我们使用AdamW [26]训练DETR，并设置了改进的权重衰减处理，权重衰减为 \(10^{- 4}\)。我们还应用了梯度裁剪，最大梯度范数为0.1。骨干网络和Transformer的处理方式略有不同，我们现在讨论两者的细节。
+我们使用AdamW [26]训练DETR，并设置了改进的权重衰减处理，权重衰减为 $10^{- 4}$。我们还应用了梯度裁剪，最大梯度范数为0.1。骨干网络和Transformer的处理方式略有不同，我们现在讨论两者的细节。
 
-**骨干网络**。从Torchvision导入ImageNet预训练的骨干网络ResNet-50，丢弃最后的分类层。训练期间冻结骨干网络的批归一化权重和统计信息，遵循目标检测中广泛采用的做法。我们使用 \(10^{- 5}\) 的学习率对骨干网络进行微调。我们观察到，让骨干网络的学习率大约比网络其余部分小一个数量级对于稳定训练很重要，尤其是在最初几个周期。
+**骨干网络**。从Torchvision导入ImageNet预训练的骨干网络ResNet-50，丢弃最后的分类层。训练期间冻结骨干网络的批归一化权重和统计信息，遵循目标检测中广泛采用的做法。我们使用 $10^{- 5}$ 的学习率对骨干网络进行微调。我们观察到，让骨干网络的学习率大约比网络其余部分小一个数量级对于稳定训练很重要，尤其是在最初几个周期。
 
-**Transformer**。我们使用 \(10^{- 4}\) 的学习率训练Transformer。在每个多头注意力和FFN之后、层归一化之前，应用0.1的加法dropout。权重使用Xavier初始化进行随机初始化。
+**Transformer**。我们使用 $10^{- 4}$ 的学习率训练Transformer。在每个多头注意力和FFN之后、层归一化之前，应用0.1的加法dropout。权重使用Xavier初始化进行随机初始化。
 
-**损失函数**。我们对边界框回归使用 \(\ell_{1}\) 和GIoU损失的线性组合，权重分别为 \(\lambda_{\mathrm{L1}} = 5\) 和 \(\lambda_{\mathrm{iou}} = 2\)。所有模型使用 \(N = 100\) 个解码器查询槽位进行训练。
+**损失函数**。我们对边界框回归使用 $\ell_{1}$ 和GIoU损失的线性组合，权重分别为 $\lambda_{\mathrm{L1}} = 5$ 和 $\lambda_{\mathrm{iou}} = 2$。所有模型使用 $N = 100$ 个解码器查询槽位进行训练。
 
-**基线**。我们增强的Faster-RCNN+基线使用GIoU [38]损失以及标准的 \(\ell_{1}\) 损失进行边界框回归。我们进行了网格搜索以找到损失的最佳权重，最终模型仅使用GIoU损失，对于框和提议框回归任务分别使用权重20和1。对于基线，我们采用与DETR相同的数据增强，并使用 \(9\times\) 计划（约109个周期）进行训练。所有其他设置与Detectron2模型库[50]中相同模型的设置相同。
+**基线**。我们增强的Faster-RCNN+基线使用GIoU [38]损失以及标准的 $\ell_{1}$ 损失进行边界框回归。我们进行了网格搜索以找到损失的最佳权重，最终模型仅使用GIoU损失，对于框和提议框回归任务分别使用权重20和1。对于基线，我们采用与DETR相同的数据增强，并使用 $9\times$ 计划（约109个周期）进行训练。所有其他设置与Detectron2模型库[50]中相同模型的设置相同。
 
-**空间位置编码**。编码器激活与图像特征的空间位置相关联。在我们的模型中，我们使用一个固定的绝对编码来表示这些空间位置。我们采用了原始Transformer [47]编码到2D情况的推广[31]。具体来说，对于每个嵌入的两个空间坐标，我们独立地使用 \(\frac{d}{2}\) 个具有不同频率的正弦和余弦函数。然后将它们拼接起来，得到最终的 \(d\) 通道位置编码。
+**空间位置编码**。编码器激活与图像特征的空间位置相关联。在我们的模型中，我们使用一个固定的绝对编码来表示这些空间位置。我们采用了原始Transformer [47]编码到2D情况的推广[31]。具体来说，对于每个嵌入的两个空间坐标，我们独立地使用 $\frac{d}{2}$ 个具有不同频率的正弦和余弦函数。然后将它们拼接起来，得到最终的 $d$ 通道位置编码。
 
 ### A.5 附加结果
 
@@ -382,7 +434,7 @@ DETR-R101模型全景预测的一些额外定性结果如图11所示。
 ![](../figures/Fig11.png)
 **图11：全景预测的比较。从左到右：真实标注，使用ResNet 101的PanopticFPN，使用ResNet 101的DETR。**
 
-**增加实例数量**。根据设计，DETR不能预测超过其查询槽位数量的目标，在我们的实验中是100个。在本节中，我们分析了DETR接近此极限时的行为。我们选择一个给定类别的标准正方形图像，将其重复放在一个 \(10 \times 10\) 的网格上，并计算模型遗漏的实例百分比。为了测试少于100个实例的情况，我们随机屏蔽一些单元格。这确保了无论有多少实例可见，目标的绝对大小是相同的。为了考虑掩码的随机性，我们使用不同的掩码重复实验100次。结果如图12所示。不同类别的行为相似，虽然模型在可见实例多达50个时能检测所有实例，但随后开始饱和并遗漏越来越多的实例。值得注意的是，当图像包含全部100个实例时，模型平均仅检测到30个，这比图像仅包含50个且全部被检测到的情况要差。这种反直觉的行为很可能是由于图像和检测远离训练分布。
+**增加实例数量**。根据设计，DETR不能预测超过其查询槽位数量的目标，在我们的实验中是100个。在本节中，我们分析了DETR接近此极限时的行为。我们选择一个给定类别的标准正方形图像，将其重复放在一个 $10 \times 10$ 的网格上，并计算模型遗漏的实例百分比。为了测试少于100个实例的情况，我们随机屏蔽一些单元格。这确保了无论有多少实例可见，目标的绝对大小是相同的。为了考虑掩码的随机性，我们使用不同的掩码重复实验100次。结果如图12所示。不同类别的行为相似，虽然模型在可见实例多达50个时能检测所有实例，但随后开始饱和并遗漏越来越多的实例。值得注意的是，当图像包含全部100个实例时，模型平均仅检测到30个，这比图像仅包含50个且全部被检测到的情况要差。这种反直觉的行为很可能是由于图像和检测远离训练分布。
 
 请注意，这个测试是设计用于测试分布外泛化能力的，因为很少有包含大量单个类别实例的示例图像。从实验中很难区分两种分布外泛化：图像本身与每个类别的目标数量。但由于很少甚至没有COCO图像仅包含大量同一类别的目标，这种类型的实验代表了我们理解目标查询是否过拟合数据集的标签和位置分布的最佳努力。总的来说，实验表明模型没有在这些分布上过拟合，因为它在多达50个目标时仍能产生近乎完美的检测。
 
@@ -430,3 +482,4 @@ detr = DETR(num_classes=91, hidden_dim=256, nheads=8, num_encoder_layers=6, num_
 detr.eval()
 inputs = torch.randn(1, 3, 800, 1200)
 logits, bboxes = detr(inputs)
+```

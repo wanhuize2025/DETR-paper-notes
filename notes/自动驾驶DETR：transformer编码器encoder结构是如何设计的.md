@@ -1,3 +1,5 @@
+以下是将原文档中所有公式修改为 `$...$` 格式后的版本，内容保持不变：
+
 # Transformer编码器结构是如何设计的
 
 > 手撕DETR源码：从特征图到全局记忆，拆解自注意力如何替代卷积堆叠
@@ -109,9 +111,7 @@ def with_pos_embed(self, tensor, pos: Optional[Tensor]):
 #### 2.1 自注意力的公式与直觉
 
 单头注意力：
-$$
-\text{Attention}(Q,K,V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
-$$
+$\text{Attention}(Q,K,V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V$
 
 - Q（Query）：我要查什么？
 - K（Key）：你有什么属性？
@@ -285,5 +285,3 @@ autodrv-TransformerEncoder: output shape after norm: torch.Size([1050, 2, 256])
 Transformer编码器并不是魔法。它用**全局自注意力**取代局部卷积，用**位置编码**保留空间结构，用**多层堆叠**逐步抽象关系。代价是放弃归纳偏置，导致收敛慢、数据饥渴。但一旦训好，它能捕捉到CNN难以企及的**长程依赖**——比如一根筷子两端的关系，或者被遮挡物体的完整轮廓。
 
 希望这篇文章能帮你跨过“注意力恐惧”。下次看到ViT或DETR时，你能自信地说：“哦，不就是编码器里那点事儿吗？”
-
----

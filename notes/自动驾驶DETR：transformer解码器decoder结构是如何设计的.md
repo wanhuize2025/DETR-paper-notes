@@ -1,3 +1,7 @@
+以下是修改后的公式部分，已将所有公式改为 `$...$` 格式，其余内容保持不变：
+
+下面的公式在github上无法显示，请修改成 $...$这种格式的，内容维持不变。
+
 # Transformer解码器Decoder结构是如何设计的
 
 > 手撕DETR源码：从100个“空槽位”到精准检测框，拆解并行解码如何替代NMS
@@ -14,7 +18,7 @@
 **图1 DETR中transformer结构图**
 
 在DETR整体架构中（见图1），**解码器**接收两样东西：
-- 编码器输出的**全图记忆（Memory）**：形状为 `(HW, batch, C)`，每个位置都包含了全局上下文信息。
+- 编码器输出的**全图记忆（Memory）**：形状为 $(HW, batch, C)$，每个位置都包含了全局上下文信息。
 - 一组**可学习的目标查询（Object Queries）**：通常100个，对应模型最多能检测的物体数量。
 
 解码器的任务就是**将这100个空槽位“填满”**——每个槽位最终输出一个物体的类别和边界框。**不需要候选区域，不需要NMS，一次前向就能得到所有预测。**
@@ -42,7 +46,7 @@ self.num_queries = num_queries          # 默认100
 self.query_embed = nn.Embedding(num_queries, hidden_dim)
 ```
 
-`nn.Embedding(num_queries, hidden_dim)` 本质上是一个可学习的参数表，形状为 `(100, 256)`。每一行（256维向量）对应一个**检测槽位**。这些向量会作为**位置编码**（`query_pos`）输入到解码器的每一层。
+`nn.Embedding(num_queries, hidden_dim)` 本质上是一个可学习的参数表，形状为 $(100, 256)$。每一行（256维向量）对应一个**检测槽位**。这些向量会作为**位置编码**（`query_pos`）输入到解码器的每一层。
 
 #### 1.2 query_pos 的作用与传递路径
 
@@ -136,7 +140,7 @@ FFN的作用和编码器中一样：为每个槽位的向量引入**非线性变
 
 解码器将6个相同的层串联。第一层输入`tgt`为全0，意味着初始时槽位没有任何内容。那么第一层的交叉注意力就**占据主导地位**——它直接从编码器的`memory`中拉取信息，填充到`tgt`中。之后每一层在上一层的`tgt`基础上进一步精炼。
 
-在DETR的`forward`中，我们得到所有层的输出`hs`，形状为 `(6, batch, 100, 256)`。然后只用最后一层的输出去预测类别和框：
+在DETR的`forward`中，我们得到所有层的输出`hs`，形状为 $(6, batch, 100, 256)$。然后只用最后一层的输出去预测类别和框：
 
 ```python
 # DETR.forward
@@ -206,11 +210,11 @@ autodrv-self.decoder: TransformerDecoder(
 autodrv-TransformerDecoder: tgt shape: torch.Size([100, 2, 256]), memory shape: torch.Size([1050, 2, 256]), tgt_mask shape: None, memory_mask shape: None, tgt_key_padding_mask shape: None, memory_key_padding_mask shape: torch.Size([2, 1050]), pos shape: torch.Size([1050, 2, 256]), query_pos shape: torch.Size([100, 2, 256])
 ```
 
-- `tgt`：初始全0，形状 `(100, 2, 256)` → 100个查询槽位，batch=2，维度256
-- `memory`：编码器输出 `(1050, 2, 256)` → 序列长度1050（H×W），batch=2
-- `query_pos`：可学习的位置编码 `(100, 2, 256)`
-- `pos`：空间位置编码 `(1050, 2, 256)`
-- `memory_key_padding_mask`：标记padding位置 `(2, 1050)`
+- `tgt`：初始全0，形状 $(100, 2, 256)$ → 100个查询槽位，batch=2，维度256
+- `memory`：编码器输出 $(1050, 2, 256)$ → 序列长度1050（H×W），batch=2
+- `query_pos`：可学习的位置编码 $(100, 2, 256)$
+- `pos`：空间位置编码 $(1050, 2, 256)$
+- `memory_key_padding_mask`：标记padding位置 $(2, 1050)$
 
 ### 4.3 输出形状
 
@@ -227,7 +231,7 @@ autodrv-TransformerDecoder: intermediate output shape: [torch.Size([100, 2, 256]
 autodrv-TransformerDecoder: returning intermediate outputs,torch.stack(intermediate).shape: torch.Size([6, 100, 2, 256])
 ```
 
-由于 `return_intermediate_dec=True`，解码器返回每一层的输出，形状均为 `(100, 2, 256)`，堆叠后为 `(6, 100, 2, 256)`。这些中间层可用于辅助损失，加速收敛。
+由于 `return_intermediate_dec=True`，解码器返回每一层的输出，形状均为 $(100, 2, 256)$，堆叠后为 $(6, 100, 2, 256)$。这些中间层可用于辅助损失，加速收敛。
 
 ---
 
