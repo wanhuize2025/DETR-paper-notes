@@ -302,14 +302,18 @@ class PostProcess(nn.Module):
                           For visualization, this should be the image size after data augment, but before padding
         """
         out_logits, out_bbox = outputs['pred_logits'], outputs['pred_boxes']
+        print(f"autodrv-PostProcess-out_logits:{out_logits.shape}, out_bbox:{out_bbox.shape}, target_sizes:{target_sizes.shape}")
 
         assert len(out_logits) == len(target_sizes)
         assert target_sizes.shape[1] == 2
 
         # 将预测的logits通过softmax函数转换为概率分布，表示每个预测属于每个类别的概率。
-        # 然后，使用max函数找到每个预测的最高概率值和对应的类别标签。
         prob = F.softmax(out_logits, -1)
+        print(f"autodrv-PostProcess-softmax-prob:{prob.shape}, prob:{prob}")
+        # 去掉最后一列的no-object类别概率，只保留前num_classes列的概率分布。
+        # 然后，使用max函数找到每个预测的最高概率值和对应的类别标签（此处返回的是索引，正好对应类别标签）。
         scores, labels = prob[..., :-1].max(-1)
+        print(f"autodrv-PostProcess-prob:{prob.shape}, scores:{scores.shape}, labels:{labels.shape}")
 
         # convert to [x0, y0, x1, y1] format
         # 将预测的边界框坐标从中心坐标格式（center_x, center_y, width, height）转换为角点坐标格式（x0, y0, x1, y1）。

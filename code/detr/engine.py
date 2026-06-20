@@ -124,12 +124,13 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
         # outputs输出的是归一化的边界框坐标和类别概率分布，orig_target_sizes包含了每个图像的原始尺寸信息。
         # 后处理器会根据这些信息将模型的输出转换为实际的边界框坐标和类别标签，以便进行评估。
         results = postprocessors['bbox'](outputs, orig_target_sizes)
+        print(f"autodrv-evaluate-results: {results}")
         if 'segm' in postprocessors.keys():
             target_sizes = torch.stack([t["size"] for t in targets], dim=0)
             results = postprocessors['segm'](results, outputs, orig_target_sizes, target_sizes)
         # 将评估结果与对应的图像ID进行匹配，一个图像中可能有多个预测结果。
         res = {target['image_id'].item(): output for target, output in zip(targets, results)}
-        #print(f"autodrv-res: {res}")
+        print(f"autodrv-evaluate-res: {res}")
         if coco_evaluator is not None:
             # 把当前 batch 的预测结果加入 COCO evaluator，不断收集结果，最后在所有 batch 评估完成后进行汇总计算指标。
             coco_evaluator.update(res)

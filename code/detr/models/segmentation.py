@@ -281,18 +281,27 @@ class PostProcessSegm(nn.Module):
 
     @torch.no_grad()
     def forward(self, results, outputs, orig_target_sizes, max_target_sizes):
+        print(f"autodrv-PostProcessSegm-orig_target_sizes:{orig_target_sizes}, max_target_sizes:{max_target_sizes}")
+        print(f"autodrv-PostProcessSegm-outputs['pred_logits']:{outputs['pred_logits'].shape}, outputs['pred_boxes']:{outputs['pred_boxes'].shape}, outputs['pred_masks']:{outputs['pred_masks'].shape}")
         assert len(orig_target_sizes) == len(max_target_sizes)
+        # 计算所有图像中最大的高度和宽度，以便后续对分割掩码进行插值处理。
+        # max_target_sizes是一个形状为[batch_size, 2]的张量，其中每行包含一个图像的最大高度和宽度。
         max_h, max_w = max_target_sizes.max(0)[0].tolist()
         outputs_masks = outputs["pred_masks"].squeeze(2)
+        print(f"autodrv-PostProcessSegm-outputs_masks:{outputs_masks.shape}, max_h:{max_h}, max_w:{max_w}")
         outputs_masks = F.interpolate(outputs_masks, size=(max_h, max_w), mode="bilinear", align_corners=False)
+        print(f"autodrv-PostProcessSegm-outputs_masks-interpolate:{outputs_masks.shape}, max_h:{max_h}, max_w:{max_w}")
         outputs_masks = (outputs_masks.sigmoid() > self.threshold).cpu()
+        print(f"autodrv-PostProcessSegm-outputs_masks-sigmoid-threshold:{outputs_masks.shape}, max_h:{max_h}, max_w:{max_w}")
 
         for i, (cur_mask, t, tt) in enumerate(zip(outputs_masks, max_target_sizes, orig_target_sizes)):
             img_h, img_w = t[0], t[1]
             results[i]["masks"] = cur_mask[:, :img_h, :img_w].unsqueeze(1)
+            print(f"autodrv-PostProcessSegm-results[i]['masks']-1:{results[i]['masks'].shape}, img_h:{img_h}, img_w:{img_w}")
             results[i]["masks"] = F.interpolate(
                 results[i]["masks"].float(), size=tuple(tt.tolist()), mode="nearest"
             ).byte()
+            print(f"autodrv-PostProcessSegm-results[i]['masks']-2:{results[i]['masks'].shape}, tt:{tt.tolist()}")
 
         return results
 
@@ -332,10 +341,11 @@ class PostProcessPanoptic(nn.Module):
             if isinstance(tup, tuple):
                 return tup
             return tuple(tup.cpu().tolist())
-
+        print(f"autodrv-PostProcessPanoptic-out_logits:{out_logits.shape}, raw_masks:{raw_masks.shape}, raw_boxes:{raw_boxes.shape}, processed_sizes:{processed_sizes}, target_sizes:{target_sizes}")
         for cur_logits, cur_masks, cur_boxes, size, target_size in zip(
             out_logits, raw_masks, raw_boxes, processed_sizes, target_sizes
         ):
+            print(f"autodrv-PostProcessPanoptic-cur_logits:{cur_logits.shape}, cur_masks:{cur_masks.shape}, cur_boxes:{cur_boxes.shape}, size:{size}, target_size:{target_size}")
             # we filter empty queries and detection below threshold
             scores, labels = cur_logits.softmax(-1).max(-1)
             keep = labels.ne(outputs["pred_logits"].shape[-1] - 1) & (scores > self.threshold)
@@ -345,6 +355,8 @@ class PostProcessPanoptic(nn.Module):
             cur_masks = cur_masks[keep]
             cur_masks = interpolate(cur_masks[:, None], to_tuple(size), mode="bilinear").squeeze(1)
             cur_boxes = box_ops.box_cxcywh_to_xyxy(cur_boxes[keep])
+            print(f"autodrv-PostProcessPanoptic-cur_scores:{cur_scores.shape}, cur_classes:{cur_classes.shape}, cur_masks:{cur_masks.shape}, cur_boxes:{cur_boxes.shape}")
+
 
             h, w = cur_masks.shape[-2:]
             assert len(cur_boxes) == len(cur_classes)
@@ -360,14 +372,16 @@ class PostProcessPanoptic(nn.Module):
             def get_ids_area(masks, scores, dedup=False):
                 # This helper function creates the final panoptic segmentation image
                 # It also returns the area of the masks that appears on the image
-
+                print(f"autodrv-PostProcessPanoptic-get_ids_area-masks:{masks.shape}, scores:{scores.shape}, dedup:{dedup}")
                 m_id = masks.transpose(0, 1).softmax(-1)
+                print(f"autodrv-PostProcessPanoptic-get_ids_area-m_id:{m_id.shape}")
 
                 if m_id.shape[-1] == 0:
                     # We didn't detect any mask :(
                     m_id = torch.zeros((h, w), dtype=torch.long, device=m_id.device)
                 else:
                     m_id = m_id.argmax(-1).view(h, w)
+                print(f"autodrv-PostProcessPanoptic-get_ids_area-m_id-argmax:{m_id.shape}, {m_id}")
 
                 if dedup:
                     # Merge the masks corresponding to the same stuff class
