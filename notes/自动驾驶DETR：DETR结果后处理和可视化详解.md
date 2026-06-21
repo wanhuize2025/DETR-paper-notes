@@ -12,7 +12,7 @@
 
 - **[Panoptic Colab Notebook](https://colab.research.google.com/github/facebookresearch/detr/blob/colab/notebooks/DETR_panoptic.ipynb)**：演示如何使用DETR进行全景分割并绘制预测结果
 
-这些Notebook是理解DETR的绝佳资源，里面有详细的可视化效果展示，建议先跑一遍再来看本文，会有更深的体会。
+这些Notebook是理解DETR的绝佳资源，建议先跑一遍再来看本文，会有更深的体会。
 
 ## 前言
 
@@ -303,7 +303,60 @@ predictions = {
 }
 ```
 
-## 五、实战案例解析
+## 五、完整流程可视化
+
+```
+DETR输出
+    ↓
+N个mask logits (N个query)
+    ↓
+┌─────────────────────────────────┐
+│  Step 1: m_id = masks.T.softmax │
+│          (-1).argmax(-1).view   │
+│          每个像素选概率最大的mask │
+└─────────────────────────────────┘
+    ↓
+实例ID图 m_id [h, w]
+    ↓
+┌─────────────────────────────────┐
+│  Step 2: 合并同类Stuff          │
+│  road→mask0, road→mask4         │
+│  → 全部变成mask0                │
+└─────────────────────────────────┘
+    ↓
+合并后的ID图
+    ↓
+┌─────────────────────────────────┐
+│  Step 3: ID → RGB (PNG保存)    │
+└─────────────────────────────────┘
+    ↓
+┌─────────────────────────────────┐
+│  Step 4: NEAREST插值到原图尺寸  │
+└─────────────────────────────────┘
+    ↓
+┌─────────────────────────────────┐
+│  Step 5: RGB → ID              │
+└─────────────────────────────────┘
+    ↓
+┌─────────────────────────────────┐
+│  Step 6: 计算每个segment面积    │
+│  area[i] = (m_id == i).sum()   │
+└─────────────────────────────────┘
+    ↓
+┌─────────────────────────────────┐
+│  Step 7: 删除面积≤4的segment    │
+│  重新分配像素 → 循环直到稳定    │
+└─────────────────────────────────┘
+    ↓
+┌─────────────────────────────────┐
+│  Step 8: 生成segments_info      │
+│  + PNG字符串                    │
+└─────────────────────────────────┘
+    ↓
+COCO Panoptic Result
+```
+
+## 六、实战案例解析
 
 让我们通过一个真实的运行日志来理解整个过程：
 
@@ -366,8 +419,149 @@ mask5只有3个像素，被认为是噪声，被删除并触发重新分配。
 
 这个看似绕弯的操作，实际上是为了解决"离散标签无法插值"的核心问题。
 
+## 七、结果可视化
 
-## 六、关键技术要点总结
+### 7.1 目标检测可视化
+
+对于目标检测任务，后处理完成后可以这样可视化：
+
+```python
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from PIL import Image
+
+def visualize_detection(image, results, score_threshold=0.5):
+    fig, ax = plt.subplots(1, figsize=(12, 8))
+    ax.imshow(image)
+    
+    for score, label, box in zip(results['scores'], results['labels'], results['boxes']):
+        if score < score_threshold:
+            continue
+            
+        # 绘制边界框
+        x0, y0, x1, y1 = box.tolist()
+        rect = patches.Rectangle(
+            (x0, y0), x1-x0, y1-y0,
+            linewidth=2, edgecolor='r', facecolor='none'
+        )
+        ax.add_patch(rect)
+        
+        # 绘制标签
+        ax.text(x0, y0-5, f'{label}: {score:.2f}', 
+                color='white', fontsize=10,
+                bbox=dict(facecolor='red', alpha=0.7))
+    
+    plt.axis('off')
+    plt.show()
+```
+
+### 7.2 实例分割可视化
+
+```python
+import numpy as np
+
+def visualize_segmentation(image, results):
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))
+    
+    # 原始图像
+    ax1.imshow(image)
+    ax1.set_title('Original Image')
+    ax1.axis('off')
+    
+    # 叠加掩码
+    ax2.imshow(image)
+    masks = results['masks']
+    for i, mask in enumerate(masks):
+        # 随机颜色
+        color = np.random.rand(3)
+        mask_np = mask.squeeze().numpy()
+        # 创建半透明掩码
+        masked = np.ma.masked_where(~mask_np, mask_np)
+        ax2.imshow(masked, alpha=0.5, cmap='tab20')
+    
+    ax2.set_title('Segmentation Result')
+    ax2.axis('off')
+    plt.show()
+```
+
+### 7.3 全景分割可视化
+
+对于全景分割，我们需要将PNG格式的结果解码并可视化：
+
+```python
+import io
+from panopticapi.utils import id2rgb
+
+def visualize_panoptic(prediction, image):
+    # 解码PNG字符串
+    png_string = prediction['png_string']
+    seg_img = Image.open(io.BytesIO(png_string))
+    
+    # 获取segments_info
+    segments_info = prediction['segments_info']
+    
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))
+    
+    # 原始图像
+    ax1.imshow(image)
+    ax1.set_title('Original Image')
+    ax1.axis('off')
+    
+    # 全景分割结果
+    ax2.imshow(seg_img)
+    ax2.set_title('Panoptic Segmentation')
+    ax2.axis('off')
+    
+    # 添加图例（部分）
+    legend_text = []
+    for info in segments_info[:10]:  # 只显示前10个
+        cat = info['category_id']
+        thing = 'Thing' if info['isthing'] else 'Stuff'
+        legend_text.append(f"{cat}: {thing} ({info['area']}px)")
+    
+    plt.figtext(0.95, 0.5, '\n'.join(legend_text), 
+                fontsize=8, verticalalignment='center',
+                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+    
+    plt.tight_layout()
+    plt.show()
+```
+
+### 7.4 注意力可视化（官方Notebook风格）
+
+对于理解DETR的工作机制，注意力可视化特别有帮助：
+
+```python
+def visualize_attention(image, outputs, layer_idx=-1, head_idx=0):
+    """
+    可视化Transformer的注意力权重
+    参考官方Colab Notebook的实现
+    """
+    # 获取注意力权重
+    attn_weights = outputs['attn_weights'][layer_idx]  # [batch, num_heads, num_queries, h*w]
+    
+    # 选择特定的head和query
+    attn = attn_weights[0, head_idx].mean(0)  # 对所有queries平均
+    attn = attn.reshape(attn.shape[0], 20, 25)  # 根据特征图尺寸调整
+    
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+    
+    # 原始图像
+    ax1.imshow(image)
+    ax1.set_title('Original Image')
+    ax1.axis('off')
+    
+    # 注意力热力图
+    im = ax2.imshow(attn, cmap='hot', interpolation='bilinear')
+    ax2.set_title('Attention Map')
+    ax2.axis('off')
+    plt.colorbar(im, ax=ax2)
+    
+    plt.tight_layout()
+    plt.show()
+```
+
+## 八、关键技术要点总结
 
 ### 1. 像素分配核心
 ```python
@@ -386,6 +580,44 @@ m_id = masks.T.softmax(-1).argmax(-1)
 
 ### 5. 阈值过滤
 置信度低于0.85的query被直接丢弃，减少了假阳性预测。
+
+## 九、常见问题与踩坑指南
+
+### 1. 内存问题
+```python
+# 这行代码会创建 [H*W, N] 的大张量
+m_id = masks.transpose(0, 1).softmax(-1)
+```
+对于大图（如1920×1080），H*W=2,073,600，如果N=100，就是2亿个元素，需要注意内存管理。
+
+### 2. ID冲突风险
+RGB转ID时必须使用正确的`rgb2id`函数，确保颜色到ID的映射是唯一的，避免不同segment使用相同颜色。
+
+### 3. 面积阈值调整
+4像素是COCO数据集的经验值，对于高分辨率图像或特殊任务，可能需要调整这个阈值。
+
+### 4. Stuff类别配置
+`is_thing_map`必须与数据集严格对应，否则会导致stuff被当作thing处理，破坏全景分割的语义。
+
+### 5. 可视化中的颜色分配
+对于实例分割和全景分割，建议使用固定的颜色方案，便于不同图像之间的对比。
+
+## 十、性能优化建议
+
+### 1. 批量处理优化
+对于batch推理，可以利用PyTorch的向量化操作并行处理多个图像。
+
+### 2. 内存复用
+在循环删除小区域时，可以复用`m_id`张量，避免频繁分配新内存。
+
+### 3. 阈值调优
+根据具体任务调整置信度阈值和面积阈值，在召回率和精确率之间找到平衡。
+
+### 4. 推理加速
+对于实时应用，可以简化后处理流程，比如减少插值操作的次数。
+
+### 5. 可视化优化
+对于大规模数据集的评估，可以将可视化结果保存为图像文件而非实时显示。
 
 ## 写在最后
 
