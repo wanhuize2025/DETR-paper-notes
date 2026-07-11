@@ -1,5 +1,3 @@
-以下是修改后的公式，已转换为 `$...$` 格式：
-
 # 一文搞懂 DETR 中的特征图提取与位置编码细节
 
 自从 Transformer 横扫 NLP 之后，视觉领域的 **DETR**（Detection Transformer）也成了目标检测的热门话题。很多熟悉 CNN 和 YOLO、Faster R-CNN 的朋友，第一次看到 DETR 时都会困惑：**特征图怎么喂给 Transformer？位置编码又从哪来？** 今天我们就结合 DETR 源码，把这两个核心问题讲透。
